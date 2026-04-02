@@ -621,9 +621,9 @@ export default function OrdersClient() {
                      <textarea 
                        name="listingDescription"
                        value={editForm.listingDescription || ""} 
-                       onChange={handleEditChange} 
-                       rows={3}
-                       className="w-full bg-background border border-border px-3 py-3 text-sm focus:border-blue-500 outline-none resize-y min-h-[80px] whitespace-pre-wrap" 
+                       onChange={(e) => { handleEditChange(e); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                       rows={2}
+                       className="w-full bg-background border border-border px-3 py-3 text-sm focus:border-blue-500 outline-none resize-none overflow-hidden min-h-[60px] whitespace-pre-wrap" 
                        placeholder="Descripción de la venta..." 
                      />
 
@@ -864,9 +864,9 @@ export default function OrdersClient() {
                        <textarea 
                          name="listingDescription"
                          value={editForm.listingDescription || ""} 
-                         onChange={handleEditChange} 
-                         rows={3}
-                         className="w-full bg-background border border-border px-3 py-3 text-sm focus:border-blue-500 outline-none resize-y min-h-[80px] whitespace-pre-wrap" 
+                         onChange={(e) => { handleEditChange(e); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                         rows={2}
+                         className="w-full bg-background border border-border px-3 py-3 text-sm focus:border-blue-500 outline-none resize-none overflow-hidden min-h-[60px] whitespace-pre-wrap" 
                          placeholder="Descripción" 
                        />
                      </div>
