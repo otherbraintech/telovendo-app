@@ -23,9 +23,15 @@ export default function OrdersClient() {
 
   const filteredOrders = filter === "TODAS" ? orders : orders.filter(o => o.status === filter)
 
+  const editingMixedImages = isEditing 
+    ? [...(editForm.imageUrls || []), ...editSelectedFiles] 
+    : (selectedOrder?.imageUrls || []);
+
+  const getMixedSrc = (img: string | File) => typeof img === 'string' ? img : URL.createObjectURL(img);
+
   const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setEditSelectedFiles(Array.from(e.target.files))
+      setEditSelectedFiles(prev => [...prev, ...Array.from(e.target.files!)])
     }
   }
 
@@ -76,7 +82,7 @@ export default function OrdersClient() {
         listingCondition: editForm.listingCondition,
         listingCategory: editForm.listingCategory,
         listingDescription: editForm.listingDescription,
-        ...(newImageUrls && newImageUrls.length > 0 ? { imageUrls: newImageUrls } : {})
+        imageUrls: [...(editForm.imageUrls || []), ...(newImageUrls || [])]
       })
       
       setOrders(orders.map(o => o.id === selectedOrder.id ? updated : o))
@@ -203,7 +209,8 @@ export default function OrdersClient() {
         listingPrice: duplicated.listingPrice,
         listingCondition: duplicated.listingCondition,
         listingCategory: duplicated.listingCategory,
-        listingDescription: duplicated.listingDescription
+        listingDescription: duplicated.listingDescription,
+        imageUrls: duplicated.imageUrls || []
       })
       setIsEditing(true)
     } catch (err) {
@@ -478,45 +485,84 @@ export default function OrdersClient() {
 
       {/* CREATION MODAL */}
       {isCreating && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-          <div className="bg-card w-full max-w-md border border-border overflow-hidden shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-2 md:p-6">
+          <div className="bg-card w-full max-w-5xl md:h-[80vh] max-h-[95vh] border border-border overflow-hidden shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 flex flex-col md:flex-row">
              
-             <div className="w-full aspect-video bg-muted relative">
-                {editSelectedFiles.length > 0 ? (
-                  <img src={URL.createObjectURL(editSelectedFiles[0])} alt="Preview" className="w-full h-full object-contain bg-black/5" />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/20">
-                    <ShoppingBag className="size-16" />
-                  </div>
-                )}
-                
-                {editSelectedFiles.length > 1 && (
-                  <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded shadow backdrop-blur-md">
-                    +{editSelectedFiles.length - 1} fotos
-                  </div>
-                )}
+             <button 
+               onClick={() => setIsCreating(false)}
+               className="absolute top-3 right-3 bg-black/50 md:bg-muted text-white md:text-foreground hover:bg-black/80 md:hover:bg-border size-8 flex items-center justify-center rounded-full transition-colors backdrop-blur-md cursor-pointer z-50"
+             >
+               ✕
+             </button>
 
-                <button 
-                  onClick={() => setIsCreating(false)}
-                  className="absolute top-3 right-3 bg-black/50 text-white hover:bg-black/80 size-8 flex items-center justify-center rounded-full transition-colors backdrop-blur-md cursor-pointer z-10"
-                >
-                  ✕
-                </button>
+             {/* Carousel Section */}
+             <div className="w-full h-64 md:h-full md:w-[50%] bg-muted relative border-b md:border-b-0 md:border-r border-border shrink-0 group/carousel flex items-center justify-center">
+                {editSelectedFiles.length > 0 ? (
+                  <>
+                    <img src={URL.createObjectURL(editSelectedFiles[activeImageIndex] || editSelectedFiles[0])} alt="Preview" className="w-full h-full object-contain bg-black/5" />
+                    
+                    <button 
+                      onClick={(e) => {
+                         e.stopPropagation();
+                         setEditSelectedFiles(prev => prev.filter((_, i) => i !== activeImageIndex));
+                         setActiveImageIndex(Math.max(0, activeImageIndex - 1));
+                      }}
+                      className="absolute top-3 left-3 bg-red-500 text-white hover:bg-red-600 px-2 py-1 rounded text-[10px] font-bold shadow opacity-80 hover:opacity-100 z-50 flex items-center gap-1 transition-all"
+                    >
+                      <Trash2 className="size-3" /> Quitar
+                    </button>
+                    
+                    {editSelectedFiles.length > 1 && (
+                      <>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : editSelectedFiles.length - 1)) }}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/80 size-8 flex items-center justify-center rounded-full transition-colors backdrop-blur-md opacity-0 group-hover/carousel:opacity-100"
+                        >
+                          {"<"}
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setActiveImageIndex((prev) => (prev < editSelectedFiles.length - 1 ? prev + 1 : 0)) }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/80 size-8 flex items-center justify-center rounded-full transition-colors backdrop-blur-md opacity-0 group-hover/carousel:opacity-100"
+                        >
+                          {">"}
+                        </button>
+
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/50 backdrop-blur-md p-1.5 rounded border border-white/10 max-w-[90%] overflow-x-auto custom-scrollbar">
+                          {editSelectedFiles.map((file: File, idx: number) => (
+                            <button
+                              key={idx}
+                              onClick={(e) => { e.stopPropagation(); setActiveImageIndex(idx) }}
+                              className={`size-10 shrink-0 rounded border-2 overflow-hidden transition-all ${activeImageIndex === idx ? 'border-blue-500 scale-110' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                            >
+                              <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground/30 gap-4 p-8 text-center">
+                    <ShoppingBag className="size-20" />
+                    <p className="text-xs font-bold">Sin imágenes</p>
+                  </div>
+                )}
              </div>
 
-             <div className="p-6">
-                <div className="space-y-4 animate-in fade-in duration-300">
-                   <div className="flex bg-muted/30 -mx-6 -mt-6 p-4 mb-4 items-center justify-between border-b border-border">
-                     <h3 className="text-xs font-black uppercase tracking-widest text-blue-500">Crear Publicación</h3>
+             {/* Content / Form Section */}
+             <div className="w-full md:w-[50%] flex flex-col h-full bg-card overflow-y-auto custom-scrollbar p-6">
+                <div className="space-y-4 animate-in fade-in duration-300 h-full flex flex-col">
+                   <div className="flex items-center justify-between border-b border-border pb-4 mb-2 shrink-0">
+                     <h3 className="text-sm font-black uppercase tracking-widest text-blue-500">Crear Publicación</h3>
                    </div>
 
-                   <div className="space-y-3 h-[50vh] overflow-y-auto px-1 custom-scrollbar">
+                   <div className="space-y-4 flex-1">
                      <label className="border-2 border-dashed border-border hover:border-blue-500/50 transition-colors p-4 flex flex-col items-center justify-center gap-2 text-center cursor-pointer bg-muted/30">
                         <input type="file" multiple accept="image/*" className="hidden" onChange={handleEditFileChange} />
                         <ImagePlus className="size-6 text-blue-500" />
                         <div>
                            <p className="text-[10px] font-bold text-foreground">
-                             {editSelectedFiles.length > 0 ? `${editSelectedFiles.length} foto(s) seleccionada(s)` : "Añadir Fotos"}
+                             {editSelectedFiles.length > 0 ? `${editSelectedFiles.length} foto(s) seleccionada(s) - Haz clic para añadir más` : "Añadir Fotos"}
                            </p>
                         </div>
                      </label>
@@ -525,7 +571,7 @@ export default function OrdersClient() {
                        name="listingTitle"
                        value={editForm.listingTitle || ""} 
                        onChange={handleEditChange} 
-                       className="w-full bg-card border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none font-bold" 
+                       className="w-full bg-background border border-border px-3 py-3 text-sm focus:border-blue-500 outline-none font-bold" 
                        placeholder="Título de la publicación..." 
                      />
                      <div className="flex relative">
@@ -535,7 +581,7 @@ export default function OrdersClient() {
                          name="listingPrice"
                          value={editForm.listingPrice || ""} 
                          onChange={handleEditChange} 
-                         className="w-full bg-card border border-border px-3 py-2 pl-9 text-sm focus:border-blue-500 outline-none" 
+                         className="w-full bg-background border border-border px-3 py-3 pl-9 text-sm focus:border-blue-500 outline-none" 
                          placeholder="0.00" 
                        />
                      </div>
@@ -545,7 +591,7 @@ export default function OrdersClient() {
                            name="listingCategory"
                            value={editForm.listingCategory} 
                            onChange={handleEditChange} 
-                           className="w-full bg-card border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none text-foreground uppercase text-[10px] tracking-widest appearance-none cursor-pointer" 
+                           className="w-full bg-background border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none text-foreground uppercase text-[10px] tracking-widest appearance-none cursor-pointer h-11" 
                         >
                            <option value="ELECTRONICA">Electrónica</option>
                            <option value="MUEBLES">Muebles</option>
@@ -563,7 +609,7 @@ export default function OrdersClient() {
                            name="listingCondition"
                            value={editForm.listingCondition} 
                            onChange={handleEditChange} 
-                           className="w-full bg-card border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none text-foreground uppercase text-[10px] tracking-widest appearance-none cursor-pointer" 
+                           className="w-full bg-background border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none text-foreground uppercase text-[10px] tracking-widest appearance-none cursor-pointer h-11" 
                         >
                            <option value="NUEVO">Nuevo</option>
                            <option value="USADO_COMO_NUEVO">Usado - Como nuevo</option>
@@ -576,30 +622,32 @@ export default function OrdersClient() {
                        name="listingDescription"
                        value={editForm.listingDescription || ""} 
                        onChange={handleEditChange} 
-                       rows={4}
-                       className="w-full bg-card border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none resize-none custom-scrollbar whitespace-pre-wrap" 
+                       rows={3}
+                       className="w-full bg-background border border-border px-3 py-3 text-sm focus:border-blue-500 outline-none resize-y min-h-[80px] whitespace-pre-wrap" 
                        placeholder="Descripción de la venta..." 
                      />
 
-                     <div className="p-3 border border-border bg-muted/30">
-                       <label className="text-[10px] uppercase tracking-widest font-bold text-blue-500 mb-1 block">Bots asignados</label>
+                     <div className="p-4 border border-border bg-blue-500/5">
+                       <label className="text-xs uppercase tracking-widest font-bold text-blue-500 mb-2 block flex items-center gap-2">
+                         <span>🤖</span> Bots asignados
+                       </label>
                        <input 
                          type="number"
                          name="quantity"
                          value={editForm.quantity} 
                          onChange={handleEditChange} 
                          min={1}
-                         className="w-full bg-card border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none" 
+                         className="w-full bg-background border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none" 
                        />
                      </div>
                    </div>
 
-                   <div className="mt-4 pt-4 flex gap-3 border-t border-border">
-                      <button onClick={() => setIsCreating(false)} className="flex-1 py-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors border border-border">
+                   <div className="mt-6 pt-4 flex gap-3 border-t border-border shrink-0">
+                      <button onClick={() => setIsCreating(false)} className="flex-1 py-3 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors border border-border">
                         Descartar
                       </button>
-                      <button disabled={saving} onClick={handleCreate} className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                        {saving && <Loader2 className="size-3 animate-spin"/>} Crear Publicación
+                      <button disabled={saving} onClick={handleCreate} className="flex-[2] py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                        {saving && <Loader2 className="size-4 animate-spin"/>} Crear Publicación
                       </button>
                    </div>
                 </div>
@@ -609,39 +657,62 @@ export default function OrdersClient() {
       )}
 
       {selectedOrder && !isCreating && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-          <div className="bg-card w-full max-w-md border border-border overflow-hidden shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-2 md:p-6">
+          <div className="bg-card w-full max-w-5xl md:h-[80vh] max-h-[95vh] border border-border overflow-hidden shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 flex flex-col md:flex-row">
              
-             <div className="w-full aspect-video bg-muted relative group/carousel">
-                {selectedOrder.imageUrls && selectedOrder.imageUrls.length > 0 ? (
+             <button 
+               onClick={() => { setSelectedOrder(null); setIsEditing(false); }}
+               className="absolute top-3 right-3 bg-black/50 md:bg-muted text-white md:text-foreground hover:bg-black/80 md:hover:bg-border size-8 flex items-center justify-center rounded-full transition-colors backdrop-blur-md cursor-pointer z-50"
+             >
+               ✕
+             </button>
+
+             <div className="w-full h-64 md:h-full md:w-[50%] bg-muted relative border-b md:border-b-0 md:border-r border-border shrink-0 group/carousel flex items-center justify-center">
+                {editingMixedImages.length > 0 ? (
                   <>
-                    <img src={selectedOrder.imageUrls[activeImageIndex]} alt="Preview" className="w-full h-full object-contain bg-black/5" />
+                    <img src={getMixedSrc(editingMixedImages[activeImageIndex] || editingMixedImages[0])} alt="Preview" className="w-full h-full object-contain bg-black/5" />
                     
-                    {/* Carousel Navigation */}
-                    {selectedOrder.imageUrls.length > 1 && (
+                    {isEditing && (
+                      <button 
+                        onClick={(e) => {
+                           e.stopPropagation();
+                           const target = editingMixedImages[activeImageIndex];
+                           if (typeof target === 'string') {
+                             setEditForm({ ...editForm, imageUrls: editForm.imageUrls.filter((url: string) => url !== target) });
+                           } else {
+                             setEditSelectedFiles(prev => prev.filter(f => f !== target));
+                           }
+                           setActiveImageIndex(Math.max(0, activeImageIndex - 1));
+                        }}
+                        className="absolute top-3 left-3 bg-red-500 text-white hover:bg-red-600 px-2 py-1 rounded text-[10px] font-bold shadow opacity-80 hover:opacity-100 z-50 flex items-center gap-1 transition-all"
+                      >
+                        <Trash2 className="size-3" /> Quitar
+                      </button>
+                    )}
+                    
+                    {editingMixedImages.length > 1 && (
                       <>
                         <button 
-                          onClick={(e) => { e.stopPropagation(); setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : selectedOrder.imageUrls.length - 1)) }}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/80 size-8 flex items-center justify-center rounded-full transition-colors backdrop-blur-md opacity-0 group-hover/carousel:opacity-100"
+                          onClick={(e) => { e.stopPropagation(); setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : editingMixedImages.length - 1)) }}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/80 size-8 flex items-center justify-center rounded-full transition-colors backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 cursor-pointer"
                         >
                           {"<"}
                         </button>
                         <button 
-                          onClick={(e) => { e.stopPropagation(); setActiveImageIndex((prev) => (prev < selectedOrder.imageUrls.length - 1 ? prev + 1 : 0)) }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/80 size-8 flex items-center justify-center rounded-full transition-colors backdrop-blur-md opacity-0 group-hover/carousel:opacity-100"
+                          onClick={(e) => { e.stopPropagation(); setActiveImageIndex((prev) => (prev < editingMixedImages.length - 1 ? prev + 1 : 0)) }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/80 size-8 flex items-center justify-center rounded-full transition-colors backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 cursor-pointer"
                         >
                           {">"}
                         </button>
 
-                        {/* Mini Previews */}
-                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/50 backdrop-blur-md p-1.5 rounded border border-white/10">
-                          {selectedOrder.imageUrls.map((url: string, idx: number) => (
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/50 backdrop-blur-md p-1.5 rounded border border-white/10 max-w-[90%] overflow-x-auto custom-scrollbar z-10">
+                          {editingMixedImages.map((img: string | File, idx: number) => (
                             <button
                               key={idx}
                               onClick={(e) => { e.stopPropagation(); setActiveImageIndex(idx) }}
-                              className={`size-10 rounded border-2 overflow-hidden transition-all ${activeImageIndex === idx ? 'border-blue-500 scale-110' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                              className={`size-10 shrink-0 rounded border-2 overflow-hidden transition-all cursor-pointer ${activeImageIndex === idx ? 'border-blue-500 scale-110' : 'border-transparent opacity-50 hover:opacity-100'}`}
                             >
-                              <img src={url} className="w-full h-full object-cover" />
+                              <img src={getMixedSrc(img)} className="w-full h-full object-cover" />
                             </button>
                           ))}
                         </div>
@@ -649,53 +720,48 @@ export default function OrdersClient() {
                     )}
                   </>
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/20">
-                    <ShoppingBag className="size-16" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground/30 gap-4 p-8 text-center">
+                    <ShoppingBag className="size-20" />
+                    <p className="text-xs font-bold">Sin imágenes</p>
                   </div>
                 )}
-                <button 
-                  onClick={() => { setSelectedOrder(null); setIsEditing(false); }}
-                  className="absolute top-3 right-3 bg-black/50 text-white hover:bg-black/80 size-8 flex items-center justify-center rounded-full transition-colors backdrop-blur-md cursor-pointer z-10"
-                >
-                  ✕
-                </button>
              </div>
 
-             <div className="p-6">
+             <div className="w-full md:w-[50%] flex flex-col h-full bg-card overflow-y-auto custom-scrollbar p-6">
                 {!isEditing ? (
-                  <>
-                    <div className="flex items-center justify-between gap-4 mb-2">
-                       <h2 className="text-2xl font-black text-foreground">Bs {selectedOrder.listingPrice?.toString() || "0"}</h2>
-                       <span className="px-2 py-1 bg-muted text-[10px] uppercase tracking-widest text-muted-foreground rounded">
+                  <div className="h-full flex flex-col">
+                    <div className="flex items-center justify-between gap-4 mb-2 shrink-0">
+                       <h2 className="text-2xl md:text-3xl font-black text-foreground">Bs {selectedOrder.listingPrice?.toString() || "0"}</h2>
+                       <span className="px-2 py-1 bg-muted text-[10px] md:text-xs uppercase tracking-widest text-muted-foreground rounded">
                          {selectedOrder.status}
                        </span>
                     </div>
-                    <h3 className="text-lg font-bold text-foreground/90 leading-tight mb-4">
+                    <h3 className="text-lg md:text-xl font-bold text-foreground/90 leading-tight mb-6 shrink-0">
                       {selectedOrder.listingTitle || selectedOrder.orderName}
                     </h3>
                     
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1">Descripción</h4>
-                        <p className="text-sm text-foreground/80 leading-relaxed max-h-32 overflow-y-auto pr-2 custom-scrollbar whitespace-pre-wrap">
+                    <div className="space-y-6 flex-1 flex flex-col">
+                      <div className="flex-1">
+                        <h4 className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-2">Descripción</h4>
+                        <p className="text-sm md:text-base text-foreground/80 leading-relaxed whitespace-pre-wrap">
                           {selectedOrder.listingDescription || "No se ha proporcionado una descripción detallada para esta publicación."}
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
+                      <div className="grid grid-cols-2 gap-4 border-t border-border pt-4 shrink-0">
                          <div>
                            <h4 className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Categoría</h4>
-                           <p className="text-xs font-semibold mt-1">{selectedOrder.listingCategory}</p>
+                           <p className="text-xs md:text-sm font-semibold mt-1">{selectedOrder.listingCategory}</p>
                          </div>
                          <div>
                            <h4 className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Condición</h4>
-                           <p className="text-xs font-semibold mt-1">{selectedOrder.listingCondition}</p>
+                           <p className="text-xs md:text-sm font-semibold mt-1">{selectedOrder.listingCondition}</p>
                          </div>
                       </div>
                     </div>
 
-                    <div className="mt-6 pt-4 flex gap-3 border-t border-border flex-wrap">
-                      <button onClick={() => { setSelectedOrder(null); setIsEditing(false); }} className="flex-1 min-w-[80px] py-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors">
+                    <div className="mt-8 pt-4 flex gap-3 border-t border-border flex-wrap shrink-0">
+                      <button onClick={() => { setSelectedOrder(null); setIsEditing(false); }} className="flex-1 min-w-[80px] py-3 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors border border-border">
                         Cerrar
                       </button>
                       <button 
@@ -705,11 +771,12 @@ export default function OrdersClient() {
                              listingPrice: selectedOrder.listingPrice,
                              listingCondition: selectedOrder.listingCondition,
                              listingCategory: selectedOrder.listingCategory,
-                             listingDescription: selectedOrder.listingDescription
+                             listingDescription: selectedOrder.listingDescription,
+                             imageUrls: selectedOrder.imageUrls || []
                            });
                            setIsEditing(true);
                          }} 
-                         className="flex-1 py-2 border border-border hover:bg-muted text-foreground text-xs font-bold transition-all whitespace-nowrap"
+                         className="flex-[2] py-3 border border-border hover:bg-muted text-foreground text-xs font-bold transition-all whitespace-nowrap"
                       >
                         Editar Publicación
                       </button>
@@ -717,38 +784,37 @@ export default function OrdersClient() {
                         <button 
                            onClick={handleSendToBots}
                            disabled={saving}
-                           className="flex-[2] py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap"
+                           className="flex-[3] py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap"
                         >
-                          {saving && <Loader2 className="size-3 animate-spin"/>}
+                          {saving && <Loader2 className="size-4 animate-spin"/>}
                           🚀 Enviar a Bots
                         </button>
                       )}
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <div className="space-y-4 animate-in fade-in duration-300">
-                     <div className="flex bg-muted/30 -mx-6 -mt-6 p-4 mb-4 items-center justify-between border-b border-border">
+                  <div className="space-y-4 animate-in fade-in duration-300 h-full flex flex-col">
+                     <div className="flex bg-muted/30 -mx-6 -mt-6 p-4 mb-4 items-center justify-between border-b border-border shrink-0">
                        <h3 className="text-xs font-black uppercase tracking-widest text-blue-500">Editando Publicación</h3>
                      </div>
 
-                     <div className="space-y-3">
+                     <div className="space-y-3 flex-1 px-1">
                        
-                       {/* Foto Upload Edit */}
                        <label className="border-2 border-dashed border-border hover:border-blue-500/50 transition-colors p-4 flex flex-col items-center justify-center gap-2 text-center cursor-pointer bg-muted/30">
-                          <input type="file" multiple accept="image/*" className="hidden" onChange={handleEditFileChange} />
+                          <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => { handleEditFileChange(e); setActiveImageIndex(0); }} />
                           <ImagePlus className="size-6 text-blue-500" />
                           <div>
                              <p className="text-[10px] font-bold text-foreground">
-                               {editSelectedFiles.length > 0 ? `${editSelectedFiles.length} foto(s) nueva(s) reemplazarán las actuales` : "Reemplazar Fotos"}
+                             {editSelectedFiles.length > 0 ? `${editSelectedFiles.length} foto(s) nueva(s) en la lista - Haz clic para añadir más` : "Seleccionar Nuevas Fotos"}
                              </p>
                           </div>
                        </label>
 
                        <input 
                          name="listingTitle"
-                         value={editForm.listingTitle} 
+                         value={editForm.listingTitle || ""} 
                          onChange={handleEditChange} 
-                         className="w-full bg-card border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none font-bold" 
+                         className="w-full bg-background border border-border px-3 py-3 text-sm focus:border-blue-500 outline-none font-bold" 
                          placeholder="Título" 
                        />
                        <div className="flex relative">
@@ -756,9 +822,9 @@ export default function OrdersClient() {
                          <input 
                            type="number"
                            name="listingPrice"
-                           value={editForm.listingPrice} 
+                           value={editForm.listingPrice || ""} 
                            onChange={handleEditChange} 
-                           className="w-full bg-card border border-border px-3 py-2 pl-9 text-sm focus:border-blue-500 outline-none" 
+                           className="w-full bg-background border border-border px-3 py-3 pl-9 text-sm focus:border-blue-500 outline-none" 
                            placeholder="Precio" 
                          />
                        </div>
@@ -768,7 +834,7 @@ export default function OrdersClient() {
                              name="listingCategory"
                              value={editForm.listingCategory} 
                              onChange={handleEditChange} 
-                             className="w-full bg-card border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none text-foreground uppercase text-[10px] tracking-widest appearance-none cursor-pointer" 
+                             className="w-full bg-background border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none text-foreground uppercase text-[10px] tracking-widest appearance-none cursor-pointer h-11" 
                           >
                              <option value="ELECTRONICA">Electrónica</option>
                              <option value="MUEBLES">Muebles</option>
@@ -786,7 +852,7 @@ export default function OrdersClient() {
                              name="listingCondition"
                              value={editForm.listingCondition} 
                              onChange={handleEditChange} 
-                             className="w-full bg-card border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none text-foreground uppercase text-[10px] tracking-widest appearance-none cursor-pointer" 
+                             className="w-full bg-background border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none text-foreground uppercase text-[10px] tracking-widest appearance-none cursor-pointer h-11" 
                           >
                              <option value="NUEVO">Nuevo</option>
                              <option value="USADO_COMO_NUEVO">Usado - Como nuevo</option>
@@ -797,20 +863,20 @@ export default function OrdersClient() {
 
                        <textarea 
                          name="listingDescription"
-                         value={editForm.listingDescription} 
+                         value={editForm.listingDescription || ""} 
                          onChange={handleEditChange} 
-                         rows={4}
-                         className="w-full bg-card border border-border px-3 py-2 text-sm focus:border-blue-500 outline-none resize-none custom-scrollbar whitespace-pre-wrap" 
+                         rows={3}
+                         className="w-full bg-background border border-border px-3 py-3 text-sm focus:border-blue-500 outline-none resize-y min-h-[80px] whitespace-pre-wrap" 
                          placeholder="Descripción" 
                        />
                      </div>
 
-                     <div className="mt-4 pt-4 flex gap-3 border-t border-border">
-                        <button onClick={() => { setIsEditing(false); setEditSelectedFiles([]); }} className="flex-1 py-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors border border-border">
+                     <div className="mt-6 pt-4 flex gap-3 border-t border-border shrink-0">
+                        <button onClick={() => { setIsEditing(false); setEditSelectedFiles([]); setActiveImageIndex(0); }} className="flex-1 py-3 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors border border-border">
                           Cancelar
                         </button>
-                        <button disabled={saving} onClick={handleSave} className="flex-1 py-2 bg-green-600 hover:bg-green-500 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                          {saving && <Loader2 className="size-3 animate-spin"/>} Guardar Cambios
+                        <button disabled={saving} onClick={handleSave} className="flex-[2] py-3 bg-green-600 hover:bg-green-500 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                          {saving && <Loader2 className="size-4 animate-spin"/>} Guardar Cambios
                         </button>
                      </div>
                   </div>
