@@ -53,9 +53,9 @@ export function TeamSwitcher({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="bg-card border border-border hover:border-blue-500/40 hover:bg-muted transition-all duration-500 shadow-sm"
+              className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300 rounded-none border-b border-sidebar-border/50"
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-none bg-blue-500 text-white font-black italic shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+              <div className="flex aspect-square size-8 items-center justify-center rounded-none bg-blue-600 text-white font-black italic shadow-[0_0_15px_rgba(37,99,235,0.4)]">
                 {activeTeam.logo}
               </div>
               <div className="grid flex-1 text-left text-[10px] leading-tight uppercase font-black tracking-widest text-foreground/80 transition-colors">
@@ -66,7 +66,7 @@ export function TeamSwitcher({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-none bg-card border-border text-foreground shadow-xl"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-none bg-sidebar border-sidebar-border text-sidebar-foreground shadow-2xl"
             align="start"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
@@ -78,7 +78,7 @@ export function TeamSwitcher({
               <DropdownMenuItem
                 key={team.id}
                 onClick={() => setSelectedProjectId(team.id)}
-                className="gap-3 p-3 focus:bg-blue-500 focus:text-white cursor-pointer group rounded-none border-b border-border/5 last:border-0"
+                className="gap-3 p-3 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground cursor-pointer group rounded-none border-b border-sidebar-border/10 last:border-0"
               >
                 <div className="flex size-6 items-center justify-center border border-border group-focus:border-white/30 transition-colors">
                   {team.logo}
@@ -91,10 +91,10 @@ export function TeamSwitcher({
             ))}
             <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuItem 
-              className="gap-3 p-3 focus:bg-blue-400 focus:text-white cursor-pointer rounded-none group"
+              className="gap-3 p-3 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground cursor-pointer rounded-none group"
               onClick={() => router.push("/projects?new=true")}
             >
-              <div className="flex size-6 items-center justify-center border border-border group-focus:border-white/30 bg-muted">
+              <div className="flex size-6 items-center justify-center border border-sidebar-border group-focus:border-sidebar-primary/30 bg-sidebar-accent/50">
                 <PlusIcon className="size-3" />
               </div>
               <div className="text-[10px] font-bold uppercase tracking-widest">Nuevo Proyecto</div>

@@ -1,6 +1,7 @@
 import React from "react";
 import { BotAnimation } from "@/components/bot-animation";
 import Link from "next/link";
+import { ModeToggle } from "@/components/mode-toggle";
 
 export default function AuthLayout({
   children,
@@ -8,13 +9,16 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-6 md:p-10 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-6 md:p-10 relative overflow-hidden font-sans transition-colors duration-500">
+      <div className="fixed top-6 right-6 z-50">
+        <ModeToggle />
+      </div>
       <BotAnimation />
       
         <div className="relative z-10 w-full max-w-sm animate-blur-fade">
           <Link href="/" className="flex flex-col items-center gap-4 mb-12 group transition-all duration-500 hover:scale-[1.02]">
-            <div className="w-12 h-12 rounded-none bg-blue-500 flex items-center justify-center animate-pulse shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-              <span className="text-black font-black text-xl italic tracking-tighter">TV</span>
+            <div className="w-16 h-16 flex items-center justify-center">
+               <img src="/iconTeloVendo.svg" alt="TeloVendo Icon" className="w-full h-full object-contain" />
             </div>
             <span className="font-black tracking-[0.3em] text-sm uppercase italic">
               Telo<span className="text-blue-500">Vendo</span>

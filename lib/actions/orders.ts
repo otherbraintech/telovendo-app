@@ -134,3 +134,15 @@ export async function deleteBotOrder(orderId: string) {
   revalidatePath("/dashboard/orders");
   return JSON.parse(JSON.stringify(order));
 }
+
+export async function getTotalOrdersCount() {
+  const session = await getSession();
+  if (!session) return 0;
+
+  const count = await prisma.botOrder.count({
+    where: { userId: session.user.id },
+  });
+  
+  return count;
+}
+

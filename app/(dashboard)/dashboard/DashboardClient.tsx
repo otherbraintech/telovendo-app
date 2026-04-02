@@ -17,7 +17,7 @@ const item = {
   show: { opacity: 1, y: 0 }
 }
 
-export default function DashboardClient({ initialProjects }: { initialProjects: any[] }) {
+export default function DashboardClient({ initialProjects, initialPublicationsCount }: { initialProjects: any[], initialPublicationsCount: number }) {
   const [projects] = useState(initialProjects);
 
   return (
@@ -67,7 +67,7 @@ export default function DashboardClient({ initialProjects }: { initialProjects: 
         />
         <DashboardCard
           title="Publicaciones"
-          value={0}
+          value={initialPublicationsCount}
           icon={<CheckCircle2 className="size-4 text-cyan-400" />}
           accent="text-cyan-400"
           href="/orders"

@@ -8,7 +8,10 @@ export async function getProjects() {
   if (!session) return [];
 
   return await prisma.project.findMany({
-    where: { userId: session.user.id },
+    where: { 
+      userId: session.user.id,
+      deletedAt: null 
+    },
     orderBy: { createdAt: "desc" },
   });
 }
@@ -53,3 +56,34 @@ export async function duplicateProject(id: string) {
     },
   });
 }
+
+export async function updateProject(id: string, name: string) {
+  const session = await getSession();
+  if (!session) throw new Error("No session");
+
+  return await prisma.project.update({
+    where: { id, userId: session.user.id },
+    data: {
+      name,
+      nameLower: name.toLowerCase(),
+    },
+  });
+}
+
+export async function publishProjectOrders(projectId: string) {
+  const session = await getSession();
+  if (!session) throw new Error("No session");
+
+  // Actualizar todas las órdenes LISTA a GENERANDO para este proyecto
+  return await prisma.botOrder.updateMany({
+    where: {
+      projectId,
+      userId: session.user.id,
+      status: "LISTA"
+    },
+    data: {
+      status: "GENERANDO"
+    }
+  });
+}
+

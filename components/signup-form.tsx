@@ -10,8 +10,8 @@ export function SignupForm() {
 
   return (
     <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="space-y-2 text-center text-white">
-        <h1 className="text-2xl font-black tracking-tighter uppercase italic">
+      <div className="space-y-2 text-center">
+        <h1 className="text-2xl font-black tracking-tighter uppercase italic text-foreground">
           Nueva Cuenta
         </h1>
         <p className="text-[10px] text-neutral-500 font-mono tracking-widest uppercase">
@@ -19,7 +19,7 @@ export function SignupForm() {
         </p>
       </div>
 
-      <form action={action} className="space-y-4 text-white">
+      <form action={action} className="space-y-4">
         <div className="space-y-3">
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 px-1">
@@ -32,7 +32,7 @@ export function SignupForm() {
                 type="text"
                 placeholder="Juan Pérez"
                 required
-                className="w-full bg-white/5 border border-white/10 p-4 pl-10 text-sm focus:border-blue-500 outline-none transition-colors font-mono"
+                className="w-full bg-background border border-border p-4 pl-10 text-sm focus:border-blue-500 outline-none transition-colors font-mono"
               />
             </div>
           </div>
@@ -48,12 +48,12 @@ export function SignupForm() {
                 type="text"
                 placeholder="juan_vendedor"
                 required
-                className="w-full bg-white/5 border border-white/10 p-4 pl-10 text-sm focus:border-blue-500 outline-none transition-colors font-mono"
+                className="w-full bg-background border border-border p-4 pl-10 text-sm focus:border-blue-500 outline-none transition-colors font-mono"
               />
             </div>
           </div>
 
-          <div className="space-y-2 text-white">
+          <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 px-1">
               Contraseña
             </label>
@@ -64,12 +64,12 @@ export function SignupForm() {
                 type="password"
                 required
                 placeholder="********"
-                className="w-full bg-white/5 border border-white/10 p-4 pl-10 text-sm focus:border-blue-500 outline-none transition-colors font-mono"
+                className="w-full bg-background border border-border p-4 pl-10 text-sm focus:border-blue-500 outline-none transition-colors font-mono"
               />
             </div>
           </div>
 
-          <div className="space-y-2 text-white">
+          <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 px-1">
               Confirmar Contraseña
             </label>
@@ -80,7 +80,7 @@ export function SignupForm() {
                 type="password"
                 required
                 placeholder="********"
-                className="w-full bg-white/5 border border-white/10 p-4 pl-10 text-sm focus:border-blue-500 outline-none transition-colors font-mono"
+                className="w-full bg-background border border-border p-4 pl-10 text-sm focus:border-blue-500 outline-none transition-colors font-mono"
               />
             </div>
           </div>
@@ -95,14 +95,14 @@ export function SignupForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="w-full h-14 rounded-none border border-blue-500/50 bg-transparent text-blue-500 hover:bg-blue-500 hover:text-black font-black text-xs uppercase tracking-[0.2em] transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.3)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group mt-2"
+          className="w-full h-14 rounded-none border border-blue-500/50 bg-transparent text-blue-500 hover:bg-blue-500 hover:text-black font-black text-xs uppercase tracking-[0.2em] transition-all duration-150 hover:shadow-[0_0_30px_rgba(59,130,246,0.3)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group mt-2 cursor-pointer"
         >
           {isPending ? "CREANDO ACCESO..." : "REGISTRARME EN EL SISTEMA"}
           {!isPending && <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
         </button>
       </form>
 
-      <div className="pt-6 border-t border-white/5 text-center">
+      <div className="pt-6 border-t border-border text-center">
         <p className="text-[10px] text-neutral-600 uppercase tracking-widest font-bold">
           ¿Ya tienes cuenta?{" "}
           <Link href="/login" className="text-blue-500 hover:text-blue-400 transition-colors ml-1">

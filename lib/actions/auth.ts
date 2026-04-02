@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { encrypt } from "@/lib/auth-utils";
+import { encrypt, decrypt } from "@/lib/auth-utils";
 
 const signupSchema = z.object({
   username: z.string().min(3, "El usuario debe tener al menos 3 caracteres").max(20),
@@ -132,3 +132,34 @@ export async function logout() {
   cookieStore.delete("session");
   redirect("/login");
 }
+
+export async function updateProfile({ name }: { name: string }) {
+  const sessionString = (await (await cookies()).get("session"))?.value;
+  if (!sessionString) throw new Error("Unauthorized");
+
+  const session = await decrypt(sessionString);
+  const userId = session.user.id;
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: { name }
+  });
+
+  // Update session cookie with new name
+  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const updatedSession = await encrypt({ 
+    ...session, 
+    user: { ...session.user, name: updatedUser.name } 
+  });
+
+  const cookieStore = await cookies();
+  cookieStore.set("session", updatedSession, { 
+    expires, 
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    path: "/"
+  });
+
+  return { success: true };
+}
+

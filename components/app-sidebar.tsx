@@ -37,13 +37,13 @@ export function AppSidebar({
   const teams = projects.length > 0 
     ? projects.map(p => ({
         name: p.name,
-        logo: <Box className="size-4 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)]" />,
+        logo: <img src="/iconTeloVendo.svg" className="size-4 animate-pulse brightness-125" />,
         plan: "Unidad Activa",
         id: p.id
       }))
     : [{
         name: "Sistema Vacío",
-        logo: <PackageSearch className="size-4 text-blue-900" />,
+        logo: <img src="/iconTeloVendo.svg" className="size-4 opacity-50 grayscale" />,
         plan: "Inicia Secuencia",
         id: "none"
       }];
@@ -52,38 +52,28 @@ export function AppSidebar({
     {
       title: "Resumen",
       url: "/dashboard",
-      icon: <LayoutDashboard className="size-4 text-blue-500" />,
+      icon: <LayoutDashboard className="size-4 text-blue-600" />,
       isActive: true,
     },
     {
-      title: "Publicar",
-      url: "#",
+      title: "Mis publicaciones",
+      url: "/orders",
       icon: <Zap className="size-4 text-amber-500" />,
-      items: [
-        {
-          title: "Crear publicación",
-          url: "/marketplace-bot",
-        },
-        {
-          title: "Mis publicaciones",
-          url: "/orders",
-        },
-      ],
     },
     {
-      title: "Mi cuenta",
-      url: "#",
-      icon: <Cpu className="size-4 text-cyan-500" />,
-      items: [
-        {
-          title: "Mis proyectos",
-          url: "/projects",
-        },
-        {
-          title: "Historial",
-          url: "/history",
-        },
-      ],
+      title: "Mis proyectos",
+      url: "/projects",
+      icon: <img src="/iconTeloVendo.svg" className="size-4 brightness-110" />,
+    },
+    {
+      title: "Historial",
+      url: "/history",
+      icon: <History className="size-4 text-neutral-500" />,
+    },
+    {
+      title: "Configuración",
+      url: "/settings",
+      icon: <Settings2 className="size-4 text-neutral-400" />,
     },
   ]
 
@@ -103,12 +93,15 @@ export function AppSidebar({
         <TeamSwitcher teams={teams} />
       </SidebarHeader>
       
-      <SidebarContent className="px-2 bg-sidebar">
-        <div className="mt-8 px-4 mb-4 text-[8px] uppercase font-black tracking-[0.6em] text-blue-500/30">
-          Menú principal
+      <SidebarContent className="px-2 bg-sidebar space-y-6">
+        <div className="mt-8 px-4 mb-2 text-[8px] uppercase font-black tracking-[0.6em] text-sidebar-primary/40">
+          Navegación
         </div>
         <NavMain items={navMain} />
         
+        <div className="absolute bottom-24 left-0 w-full px-4 opacity-20 pointer-events-none">
+           <div className="text-[10px] font-mono tracking-widest uppercase">System V1.0</div>
+        </div>
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-blue-500/10 bg-sidebar">
