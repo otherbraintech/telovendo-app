@@ -1,65 +1,128 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { LayoutDashboard, ShoppingCart, ArrowRight, LogIn, Bot, Zap, Activity, ShieldCheck, Globe, Command, ListFilter, Users } from "lucide-react";
+import { cookies } from "next/headers";
+import { BotAnimation } from "@/components/bot-animation";
 
-export default function Home() {
+export default async function LandingPage() {
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("session_token");
+  const isAuthenticated = !!sessionToken;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-blue-500/30 font-sans">
+      <BotAnimation />
+      
+      {/* Mini Navbar */}
+      <nav className="fixed top-0 w-full z-50 p-6 flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 rounded-none bg-blue-500 animate-pulse" />
+          <span className="font-bold tracking-[0.2em] text-xs uppercase">Telo<span className="opacity-50">Vendo</span></span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+      </nav>
+
+      <main className="relative flex flex-col items-center max-w-5xl mx-auto px-6">
+        {/* Full-screen Hero Section */}
+        <section className="flex flex-col items-center justify-center min-h-[100svh] w-full py-20 text-center">
+          <div className="space-y-4 mb-12">
+            <div className="space-y-3">
+              <h1 className="text-4xl md:text-7xl font-black tracking-tighter uppercase italic leading-none animate-title-reveal">
+                TeloVendo
+              </h1>
+              <div className="w-full max-w-full px-4 mx-auto">
+                <p className="text-[9px] md:text-xs text-neutral-500 font-mono tracking-widest md:tracking-[0.4em] uppercase animate-typing-tech break-words">
+                  Red de Automatización / Marketplace / V1.0
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full max-w-lg mx-auto animate-blur-fade [animation-delay:0.4s] opacity-0" style={{ animationFillMode: "forwards" }}>
+            {isAuthenticated ? (
+               <div className="w-full bg-white/5 border border-white/5 p-6 backdrop-blur-md space-y-6">
+                 <div className="text-left space-y-4">
+                   <h2 className="text-xs font-bold tracking-[0.3em] uppercase text-blue-500">Publicación Rápida</h2>
+                   <div className="space-y-4">
+                     <div className="space-y-2">
+                       <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">URL del Producto (Facebook)</label>
+                       <input 
+                         type="text" 
+                         placeholder="https://facebook.com/marketplace/item/..." 
+                         className="w-full bg-black border border-white/10 p-4 text-sm focus:border-blue-500 outline-none transition-colors font-mono"
+                       />
+                     </div>
+                     <div className="grid grid-cols-2 gap-4">
+                       <div className="space-y-2">
+                         <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Cantidad Bots</label>
+                         <input 
+                           type="number" 
+                           defaultValue={50} 
+                           className="w-full bg-black border border-white/10 p-4 text-sm focus:border-blue-500 outline-none transition-colors font-mono"
+                         />
+                       </div>
+                      <button className="h-full rounded-none border border-blue-500/50 bg-transparent text-blue-500 hover:bg-blue-500 hover:text-black font-black text-xs uppercase tracking-widest self-end transition-all duration-300 px-6">
+                        PUBLICAR AHORA
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-white/5">
+                  <Link href="/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-neutral-600 hover:text-white transition-colors">Ver Dashboard Completo →</Link>
+                </div>
+              </div>
+            ) : (
+              <Link 
+                href="/login" 
+                className="h-16 px-10 rounded-none border border-blue-500/50 bg-transparent text-blue-500 hover:bg-blue-500 hover:text-black font-black text-sm uppercase tracking-[0.2em] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_0_50px_rgba(59,130,246,0.4)] flex items-center justify-center gap-4 group"
+              >
+                Acceder al sistema
+                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+              </Link>
+            )}
+          </div>
+
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-20 [animation-delay:1s]">
+            <div className="w-px h-12 bg-gradient-to-b from-blue-500 to-transparent" />
+          </div>
+        </section>
+
+        {/* System Cards (Below the fold) */}
+        <section className="w-full pb-32">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl animate-blur-fade [animation-delay:0.7s] opacity-0" style={{ animationFillMode: "forwards" }}>
+            <div className="group bg-white/3 border border-white/5 p-6 hover:border-blue-500/30 transition-all duration-500">
+               <Activity className="w-4 h-4 text-blue-500 mb-4" />
+               <div className="space-y-1">
+                  <div className="text-2xl font-black italic tracking-tighter">99.8%</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Uptime</div>
+               </div>
+            </div>
+
+            <div className="group bg-white/3 border border-white/5 p-6 hover:border-blue-500/30 transition-all duration-500">
+               <Bot className="w-4 h-4 text-blue-500 mb-4" />
+               <div className="space-y-1">
+                  <div className="text-2xl font-black italic tracking-tighter">20</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Bots Activos</div>
+               </div>
+            </div>
+
+            <div className="group bg-white/3 border border-white/5 p-6 hover:border-blue-500/30 transition-all duration-500">
+               <ShieldCheck className="w-4 h-4 text-blue-500 mb-4" />
+               <div className="space-y-1">
+                  <div className="text-2xl font-black italic tracking-tighter">SECURED</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Protección</div>
+               </div>
+            </div>
+          </div>
+        </section>
       </main>
+
+      <footer className="w-full flex flex-col md:flex-row justify-between items-center px-12 py-12 border-t border-white/5 text-[10px] font-bold tracking-[0.3em] uppercase text-neutral-600 gap-6">
+        <div>TeloVendo &copy; {new Date().getFullYear()} / Acceso Restringido</div>
+        <div className="flex gap-12">
+           <a href="#" className="hover:text-blue-500 transition-colors">Documentation</a>
+           <a href="#" className="hover:text-blue-500 transition-colors">System Status</a>
+        </div>
+      </footer>
     </div>
   );
 }

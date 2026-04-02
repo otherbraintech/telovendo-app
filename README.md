@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TeloVendo - Gestión Avanzada de Bots para Marketplace
 
-## Getting Started
+TeloVendo es una plataforma industrial diseñada para maximizar el alcance en Facebook Marketplace mediante la automatización estratégica de publicaciones. Permite crear órdenes masivas que son ejecutadas por bots especializados para posicionar productos de forma eficiente y a gran escala.
 
-First, run the development server:
+## Características Principales
+
+- **Publicación Masiva**: Automatiza la creación de cientos de publicaciones con un solo clic.
+- **Gestión de Bots**: Controla y monitorea la actividad de los bots en tiempo real.
+- **Alcance Geográfico**: Posiciona tus productos en múltiples zonas sin esfuerzo manual.
+- **Evasión de Spam**: Algoritmos inteligentes para replicar contenido de forma orgánica.
+
+## Stack Tecnológico
+
+- **Frontend**: [Next.js 16](https://nextjs.org) (App Router), TypeScript, Tailwind CSS.
+- **Componentes**: shadcn/ui & Radix UI.
+- **Base de Datos**: Prisma ORM con PostgreSQL.
+- **Iconografía**: Lucide React.
+
+## Comenzar
+
+Primero, instala las dependencias:
+
+```bash
+npm install
+```
+
+Luego, configura tu base de datos en el archivo `.env` y ejecuta las migraciones de Prisma:
+
+```bash
+npx prisma migrate dev
+```
+
+Inicia el servidor de desarrollo:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver el resultado.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estructura del Proyecto
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `/app`: Rutas del App Router y componentes de página.
+- `/components`: Componentes de UI reutilizables (shadcn).
+- `/lib`: Utilidades, clientes de base de datos y acciones del servidor.
+- `/prisma`: Esquema de la base de datos y migraciones.

@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String           @id @default(cuid())
+  username        String           @unique
+  usernameLower   String           @unique
+  passwordHash    String
+  name            String
+  role            Role             @default(USUARIO)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  botOrders       BotOrder[]
+  genMarketplaces GenMarketplace[]
+  projects        Project[]
+}
+
+model Project {
+  id                String           @id @default(cuid())
+  name              String
+  nameLower         String
+  userId            String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  deletedAt         DateTime?
+  botOrders         BotOrder[]
+  user              User             @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+model BotOrder {
+  id              String                @id @default(cuid())
+  projectId       String
+  userId          String
+  type            OrderType             @default(MARKETPLACE)
+  orderName       String                @default("Publicación Marketplace")
+  socialNetwork   SocialNetwork         @default(FACEBOOK)
+  quantity        Int                   @default(1)
+  status          OrderStatus           @default(LISTA)
+  // Campos específicos de Facebook Marketplace
+  listingTitle    String?
+  listingPrice    Decimal?              @db.Decimal(10, 2)
+  listingCategory MarketplaceCategory   @default(VARIOS)
+  listingCondition ItemCondition        @default(NUEVO)
+  listingDescription String?
+  listingAvailability ItemAvailability  @default(DISPONIBLE)
+  // Imágenes (almacenadas como URLs o paths)
+  imageUrls       String[]              @default([])
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  project         Project               @relation(fields: [projectId], references: [id])
+  user            User                  @relation(fields: [userId], references: [id])
+  genMarketplaces GenMarketplace[]
+
+  @@index([projectId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model GenMarketplace {
+  id        Int           @id @default(autoincrement())
+  orderId   String
+  userId    String
+  status    CommentStatus @default(PENDIENTE)
+  deviceId  String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now())
+
+  device   Device?  @relation(fields: [deviceId], references: [id])
+  botOrder BotOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@index([orderId, createdAt])
+}
+
+model Device {
+  id              String           @id @default(cuid())
+  deviceName      String           @unique
+  personName      String?
+  label           String?
+  status          DeviceStatus     @default(LIBRE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  genMarketplaces GenMarketplace[]
+
+  @@map("dispositivos")
+}
+
+enum Role {
+  ADMIN
+  USUARIO
+}
+
+enum OrderType {
+  MARKETPLACE
+  COMENTARIO
+  MEGUSTA
+  COMPARTIR
+  SEGUIMIENTO
+  REPORTE
+  GENLIVE
+}
+
+enum OrderStatus {
+  LISTA
+  GENERANDO
+  GENERADA
+  CANCELADA
+  REINTENTAR
+  COMPLETADA
+  PAUSADA
+}
+
+enum SocialNetwork {
+  FACEBOOK
+  INSTAGRAM
+  TIKTOK
+  YOUTUBE
+}
+
+enum PostType {
+  PUBLICACION
+  IMAGEN
+  VIDEO
+  TEXTO
+  PAGINA
+  LIVE
+  OTRO
+}
+
+enum MarketplaceCategory {
+  VARIOS
+  ELECTRONICA
+  VEHICULOS
+  ROPA_Y_ACCESORIOS
+  HOGAR_Y_JARDIN
+  JUGUETES_Y_JUEGOS
+  DEPORTES
+  INSTRUMENTOS_MUSICALES
+  ARTE_Y_COLECCIONABLES
+  LIBROS_Y_REVISTAS
+  PELICULAS_Y_MUSICA
+  VIDEOJUEGOS
+  MASCOTAS
+  ARTICULOS_BEBE
+  HERRAMIENTAS
+  JOYERIA
+  BOLSOS_Y_ACCESORIOS
+  ANTIGUEDADES
+  SALUD_Y_BELLEZA
+  MUEBLES
+  ELECTRODOMESTICOS
+  ALIMENTOS_Y_BEBIDAS
+}
+
+enum ItemCondition {
+  NUEVO
+  USADO_COMO_NUEVO
+  USADO_BUENO
+  USADO_REGULAR
+}
+
+enum ItemAvailability {
+  DISPONIBLE
+  EN_POSESION_COMPRADOR
+  OCULTO
+}
+
+enum CommentStatus {
+  PENDIENTE
+  PUBLICADO
+  CANCELADO
+  SINPUBLICAR
+}
+
+enum DeviceStatus {
+  OCUPADO
+  LIBRE
+  BLOQUEADO
+}
