@@ -70,11 +70,6 @@ export function AppSidebar({
       url: "/history",
       icon: <History className="size-4 text-neutral-500" />,
     },
-    {
-      title: "Configuración",
-      url: "/settings",
-      icon: <Settings2 className="size-4 text-neutral-400" />,
-    },
   ]
 
   const userData = {

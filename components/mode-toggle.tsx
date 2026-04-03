@@ -16,7 +16,7 @@ export function ModeToggle() {
   return (
     <button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="relative flex items-center gap-3 h-10 px-4 border border-blue-500/20 hover:border-blue-500 hover:bg-blue-500/5 transition-all text-blue-500 group overflow-hidden"
+      className="relative flex items-center gap-3 h-10 px-4 border border-blue-500/20 hover:border-blue-500 hover:bg-blue-500/5 transition-all text-blue-500 group overflow-hidden cursor-pointer"
     >
       <div className="relative size-4 shrink-0">
         <motion.div

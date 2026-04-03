@@ -348,7 +348,7 @@ export default function OrdersClient() {
           <div className="flex flex-wrap items-center gap-3">
             <button 
               onClick={() => { setEditForm({ listingCategory: "VARIOS", listingCondition: "NUEVO", quantity: 1 }); setEditSelectedFiles([]); setIsCreating(true); setActiveImageIndex(0); }}
-              className="h-9 px-6 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+              className="h-9 px-6 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 cursor-pointer"
             >
               + Nueva Publicación
             </button>
@@ -415,12 +415,12 @@ export default function OrdersClient() {
                 </div>
               </div>
               <div className="absolute top-3 right-3 z-20">
-                <button onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === order.id ? null : order.id); }} className={`size-8 flex items-center justify-center bg-card/80 border border-border text-foreground backdrop-blur-md transition-all hover:bg-blue-600 hover:text-white ${menuOpenId === order.id ? 'bg-blue-600 text-white shadow-xl' : ''}`}><MoreVertical className="size-4" /></button>
+                <button onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === order.id ? null : order.id); }} className={`size-8 flex items-center justify-center bg-card/80 border border-border text-foreground backdrop-blur-md transition-all hover:bg-blue-600 hover:text-white rounded-full cursor-pointer ${menuOpenId === order.id ? 'bg-blue-600 text-white shadow-xl' : ''}`}><MoreVertical className="size-4" /></button>
                 {menuOpenId === order.id && (
                   <div className="absolute top-10 right-0 w-48 bg-card border border-border shadow-2xl z-50 animate-in slide-in-from-top-2 duration-300 rounded-none">
-                    <button onClick={(e) => { e.stopPropagation(); setMenuOpenId(null); setSelectedOrder(order); setEditForm({...order}); setIsEditing(true); }} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase flex items-center gap-3 hover:bg-muted transition-colors border-b border-border"><Edit className="size-3 text-blue-500" /> Editar</button>
-                    <button onClick={(e) => handleDuplicate(e, order)} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase flex items-center gap-3 hover:bg-muted transition-colors border-b border-border"><Copy className="size-3 text-green-500" /> Duplicar</button>
-                    <button onClick={(e) => handleDelete(e, order.id)} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase flex items-center gap-3 hover:bg-red-500/10 text-red-500 transition-colors"><Trash2 className="size-3" /> Eliminar</button>
+                    <button onClick={(e) => { e.stopPropagation(); setMenuOpenId(null); setSelectedOrder(order); setEditForm({...order}); setIsEditing(true); }} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase flex items-center gap-3 hover:bg-muted transition-colors border-b border-border cursor-pointer"><Edit className="size-3 text-blue-500" /> Editar</button>
+                    <button onClick={(e) => handleDuplicate(e, order)} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase flex items-center gap-3 hover:bg-muted transition-colors border-b border-border cursor-pointer"><Copy className="size-3 text-green-500" /> Duplicar</button>
+                    <button onClick={(e) => handleDelete(e, order.id)} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase flex items-center gap-3 hover:bg-red-500/10 text-red-500 transition-colors cursor-pointer"><Trash2 className="size-3" /> Eliminar</button>
                   </div>
                 )}
               </div>
@@ -434,7 +434,7 @@ export default function OrdersClient() {
       {isCreating && (
         <div className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-xl p-4 md:p-8 flex items-start md:items-center justify-center overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) setIsCreating(false) }}>
           <div className="relative w-full max-w-5xl bg-card border border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in-95 duration-500 flex flex-col md:flex-row min-h-[500px]">
-             <button onClick={() => setIsCreating(false)} className="absolute -top-3 -right-3 md:-top-6 md:-right-6 size-10 md:size-14 bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition-all z-[110] shadow-2xl border border-white/10 group active:scale-90"><X className="size-5 md:size-7 group-hover:rotate-90 transition-transform duration-300" /></button>
+             <button onClick={() => setIsCreating(false)} className="absolute -top-3 -right-3 md:-top-6 md:-right-6 size-10 md:size-14 bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition-all z-[110] shadow-2xl border border-white/10 group active:scale-90 cursor-pointer"><X className="size-5 md:size-7 group-hover:rotate-90 transition-transform duration-300" /></button>
              <div className="flex-1 flex flex-col md:flex-row">
                <div className="w-full md:w-[48%] bg-muted/20 flex flex-col border-b md:border-b-0 md:border-r border-border p-6 shrink-0 md:sticky md:top-0">
                   <div className="relative aspect-square w-full bg-black/20 flex items-center justify-center overflow-hidden border border-border shadow-inner">
@@ -442,7 +442,7 @@ export default function OrdersClient() {
                   </div>
                   {editSelectedFiles.length > 1 && (
                     <div className="bg-background/20 mt-4 p-3 border border-border/50 flex items-center gap-3 overflow-x-auto scrollbar-hide">
-                      {editSelectedFiles.map((file: File, idx: number) => (<button key={idx} onClick={() => setActiveImageIndex(idx)} className={`size-16 shrink-0 border-2 transition-all ${activeImageIndex === idx ? 'border-blue-500 scale-105 shadow-2xl z-10' : 'border-transparent opacity-40 hover:opacity-100'}`}><FilePreview file={file} className="w-full h-full object-cover" /></button>))}
+                      {editSelectedFiles.map((file: File, idx: number) => (<button key={idx} onClick={() => setActiveImageIndex(idx)} className={`size-16 shrink-0 border-2 transition-all cursor-pointer ${activeImageIndex === idx ? 'border-blue-500 scale-105 shadow-2xl z-10' : 'border-transparent opacity-40 hover:opacity-100'}`}><FilePreview file={file} className="w-full h-full object-cover" /></button>))}
                     </div>
                   )}
                   <label className="mt-4 border border-dashed border-blue-500/30 p-8 flex flex-col items-center justify-center gap-3 cursor-pointer bg-blue-500/5 hover:bg-blue-500/10 transition-all group">
@@ -464,10 +464,6 @@ export default function OrdersClient() {
                     <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Descripción Detallada</Label><Textarea className="min-h-[140px] bg-muted/20 border-border text-xs leading-relaxed resize-none p-4" name="listingDescription" value={editForm.listingDescription || ""} onChange={handleEditChange} /></div>
                  </div>
                  <div className="pt-6 flex gap-3"><button onClick={() => setIsCreating(false)} className="flex-1 h-12 text-[10px] font-black uppercase tracking-[0.2em] border border-border hover:bg-muted transition-all">Cancelar</button><button disabled={saving} onClick={handleCreate} className="flex-[2] h-12 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all shadow-xl shadow-blue-500/20">{saving ? <Loader2 className="size-4 animate-spin"/> : "CREAR PUBLICACIÓN"}</button></div>
-                 <div className="mt-8 pt-6 border-t border-border/50 grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-muted/10 border border-border/30"><p className="text-[8px] font-black uppercase text-muted-foreground/40 mb-1 tracking-widest">Entidad</p><p className="text-[10px] font-bold text-blue-500/50 uppercase tracking-tighter">Facebook / MP</p></div>
-                    <div className="p-3 bg-muted/10 border border-border/30"><p className="text-[8px] font-black uppercase text-muted-foreground/40 mb-1 tracking-widest">Repo</p><p className="text-[10px] font-bold text-foreground/40 uppercase tracking-tighter">TeloVendo Oficial</p></div>
-                 </div>
                </div>
              </div>
           </div>
@@ -484,11 +480,11 @@ export default function OrdersClient() {
         >
           {/* NAVIGATION BUTTONS (DESKTOP) */}
           <div className="hidden md:flex fixed inset-x-4 top-1/2 -translate-y-1/2 justify-between items-center z-[110] pointer-events-none">
-            <button onClick={(e) => { e.stopPropagation(); handleNavigate('prev'); }} className="size-16 bg-white/5 hover:bg-blue-600 text-white rounded-full flex items-center justify-center backdrop-blur-md border border-white/10 transition-all pointer-events-auto hover:scale-110 active:scale-95"><ChevronLeft className="size-8" /></button>
-            <button onClick={(e) => { e.stopPropagation(); handleNavigate('next'); }} className="size-16 bg-white/5 hover:bg-blue-600 text-white rounded-full flex items-center justify-center backdrop-blur-md border border-white/10 transition-all pointer-events-auto hover:scale-110 active:scale-95"><ChevronRight className="size-8" /></button>
+            <button onClick={(e) => { e.stopPropagation(); handleNavigate('prev'); }} className="size-16 bg-white/5 hover:bg-blue-600 text-white rounded-full flex items-center justify-center backdrop-blur-md border border-white/10 transition-all pointer-events-auto hover:scale-110 active:scale-95 cursor-pointer"><ChevronLeft className="size-8" /></button>
+            <button onClick={(e) => { e.stopPropagation(); handleNavigate('next'); }} className="size-16 bg-white/5 hover:bg-blue-600 text-white rounded-full flex items-center justify-center backdrop-blur-md border border-white/10 transition-all pointer-events-auto hover:scale-110 active:scale-95 cursor-pointer"><ChevronRight className="size-8" /></button>
           </div>
           <div className="relative w-full max-w-5xl bg-card border border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in-95 duration-500 flex flex-col md:flex-row min-h-[500px]">
-             <button onClick={() => { setSelectedOrder(null); setIsEditing(false); }} className="absolute -top-3 -right-3 md:-top-6 md:-right-6 size-10 md:size-14 bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition-all z-[110] shadow-2xl border border-white/10 group active:scale-90"><X className="size-5 md:size-7 group-hover:rotate-90 transition-transform duration-300" /></button>
+             <button onClick={() => { setSelectedOrder(null); setIsEditing(false); }} className="absolute -top-3 -right-3 md:-top-6 md:-right-6 size-10 md:size-14 bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition-all z-[110] shadow-2xl border border-white/10 group active:scale-90 cursor-pointer"><X className="size-5 md:size-7 group-hover:rotate-90 transition-transform duration-300" /></button>
              <div className="flex-1 flex flex-col md:flex-row">
                <div className="w-full md:w-[48%] bg-muted/20 flex flex-col border-b md:border-b-0 md:border-r border-border p-6 shrink-0 md:sticky md:top-0">
                   <div className="relative aspect-square w-full bg-black/20 flex items-center justify-center overflow-hidden border border-border shadow-inner">
@@ -498,13 +494,13 @@ export default function OrdersClient() {
                     <div className="bg-background/20 mt-4 p-3 border border-border/50 flex items-center gap-3 overflow-x-auto scrollbar-hide">
                       {editingMixedImages.map((img: string | File, idx: number) => (
                         <div key={idx} className="relative group shrink-0">
-                          <button onClick={() => setActiveImageIndex(idx)} className={`size-16 shrink-0 border-2 transition-all ${activeImageIndex === idx ? 'border-blue-500 scale-105 shadow-2xl z-10' : 'border-transparent opacity-40 hover:opacity-100'}`}><FilePreview file={img} className="w-full h-full object-cover" /></button>
-                          {isEditing && (<button onClick={(e) => { e.stopPropagation(); const target = editingMixedImages[idx]; if (typeof target === 'string') { setEditForm({ ...editForm, imageUrls: editForm.imageUrls.filter((url: string) => url !== target) }); } else { setEditSelectedFiles(prev => prev.filter(f => f !== target)); } setActiveImageIndex(0); }} className="absolute -top-1.5 -right-1.5 bg-red-500 text-white size-5 flex items-center justify-center rounded-none z-20 shadow-xl active:scale-95"><X className="size-3" /></button>)}
+                          <button onClick={() => setActiveImageIndex(idx)} className={`size-16 shrink-0 border-2 transition-all cursor-pointer ${activeImageIndex === idx ? 'border-blue-500 scale-105 shadow-2xl z-10' : 'border-transparent opacity-40 hover:opacity-100'}`}><FilePreview file={img} className="w-full h-full object-cover" /></button>
+                          {isEditing && (<button onClick={(e) => { e.stopPropagation(); const target = editingMixedImages[idx]; if (typeof target === 'string') { setEditForm({ ...editForm, imageUrls: editForm.imageUrls.filter((url: string) => url !== target) }); } else { setEditSelectedFiles(prev => prev.filter(f => f !== target)); } setActiveImageIndex(0); }} className="absolute -top-1.5 -right-1.5 bg-red-500 text-white size-5 flex items-center justify-center rounded-none z-20 shadow-xl active:scale-95 cursor-pointer"><X className="size-3" /></button>)}
                         </div>
                       ))}
                     </div>
                   )}
-                  {isEditing && (<label className="mt-4 border border-dashed border-blue-500/30 p-6 flex flex-col items-center justify-center gap-2 cursor-pointer bg-blue-500/5 hover:bg-blue-500/10 transition-all group"><input type="file" multiple accept="image/*" className="hidden" onChange={handleEditFileChange} /><ImagePlus className="size-6 text-blue-500 group-hover:scale-125 transition-transform" /><p className="text-[10px] font-black uppercase tracking-widest text-blue-500">Añadir</p></label>)}
+                  {isEditing && (<label className="mt-4 border border-dashed border-blue-500/30 p-6 flex flex-col items-center justify-center gap-2 cursor-pointer bg-blue-500/5 hover:bg-blue-500/10 transition-all group cursor-pointer"><input type="file" multiple accept="image/*" className="hidden" onChange={handleEditFileChange} /><ImagePlus className="size-6 text-blue-500 group-hover:scale-125 transition-transform" /><p className="text-[10px] font-black uppercase tracking-widest text-blue-500">Añadir</p></label>)}
                </div>
                <div className="flex-1 bg-card p-6 md:p-12 space-y-6 overflow-y-auto">
                  {!isEditing ? (
@@ -525,17 +521,13 @@ export default function OrdersClient() {
                         </div>
                      </div>
                      <div className="mt-8 pt-6 flex flex-wrap gap-3 border-t border-border">
-                       <div className="flex w-full gap-3 mb-2 md:mb-0 md:w-auto">
-                         <button onClick={() => handleNavigate('prev')} className="flex-1 md:w-12 h-12 border border-border flex items-center justify-center hover:bg-muted transition-all active:scale-90"><ChevronLeft className="size-5"/></button>
-                         <button onClick={() => handleNavigate('next')} className="flex-1 md:w-12 h-12 border border-border flex items-center justify-center hover:bg-muted transition-all active:scale-90"><ChevronRight className="size-5"/></button>
+                       <button onClick={() => { setSelectedOrder(null); setIsEditing(false); }} className="flex-1 h-12 border border-border text-[10px] font-black uppercase tracking-[0.2em] hover:bg-muted transition-all cursor-pointer">Cerrar</button>
+                       <button onClick={() => { setEditForm({...selectedOrder}); setIsEditing(true); }} className="flex-1 h-12 border border-blue-500/30 text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 hover:bg-blue-500/5 transition-all cursor-pointer">Editar</button>
+                       {selectedOrder.status === "LISTA" && (<button onClick={handleSendToBots} disabled={saving} className="flex-[2] h-12 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-blue-500/20 active:scale-95 cursor-pointer">{saving ? <Loader2 className="size-4 animate-spin"/> : "🚀 Enviar"}</button>)}
+                       <div className="flex w-full md:w-auto gap-3">
+                         <button onClick={() => handleNavigate('prev')} className="flex-1 md:w-12 h-12 border border-border flex items-center justify-center hover:bg-muted transition-all active:scale-90 cursor-pointer"><ChevronLeft className="size-5"/></button>
+                         <button onClick={() => handleNavigate('next')} className="flex-1 md:w-12 h-12 border border-border flex items-center justify-center hover:bg-muted transition-all active:scale-90 cursor-pointer"><ChevronRight className="size-5"/></button>
                        </div>
-                       <button onClick={() => { setSelectedOrder(null); setIsEditing(false); }} className="flex-1 h-12 border border-border text-[10px] font-black uppercase tracking-[0.2em] hover:bg-muted transition-all">Cerrar</button>
-                       <button onClick={() => { setEditForm({...selectedOrder}); setIsEditing(true); }} className="flex-1 h-12 border border-blue-500/30 text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 hover:bg-blue-500/5 transition-all">Editar</button>
-                       {selectedOrder.status === "LISTA" && (<button onClick={handleSendToBots} disabled={saving} className="flex-[2] h-12 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-blue-500/20 active:scale-95">{saving ? <Loader2 className="size-4 animate-spin"/> : "🚀 Enviar"}</button>)}
-                     </div>
-                     <div className="mt-8 pt-6 border-t border-border/50 grid grid-cols-2 gap-3">
-                        <div className="p-3 bg-muted/10 border border-border/30"><p className="text-[8px] font-black uppercase text-muted-foreground/40 mb-1 tracking-widest">Sincronización</p><p className="text-[10px] font-bold text-foreground/40 uppercase tracking-tighter">Marketplace Activo</p></div>
-                        <div className="p-3 bg-muted/10 border border-border/30"><p className="text-[8px] font-black uppercase text-muted-foreground/40 mb-1 tracking-widest">Plataforma</p><p className="text-[10px] font-bold text-foreground/40 uppercase tracking-tighter">TeloVendo App</p></div>
                      </div>
                    </div>
                  ) : (
@@ -550,7 +542,7 @@ export default function OrdersClient() {
                         </div>
                         <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Descripción</Label><Textarea className="min-h-[180px] bg-muted/20 border-border text-xs leading-relaxed resize-none p-4" name="listingDescription" value={editForm.listingDescription || ""} onChange={handleEditChange} /></div>
                       </div>
-                      <div className="mt-8 pt-6 flex gap-3 border-t border-border"><button onClick={() => setIsEditing(false)} className="flex-1 h-12 text-[10px] font-black uppercase tracking-[0.2em] border border-border hover:bg-muted transition-all">Cancelar</button><button disabled={saving} onClick={handleSave} className="flex-[2] h-12 bg-green-600 hover:bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all shadow-xl shadow-green-600/20 active:scale-95">{saving ? <Loader2 className="size-4 animate-spin"/> : "GUARDAR CAMBIOS"}</button></div>
+                      <div className="mt-8 pt-6 flex gap-3 border-t border-border"><button onClick={() => setIsEditing(false)} className="flex-1 h-12 text-[10px] font-black uppercase tracking-[0.2em] border border-border hover:bg-muted transition-all cursor-pointer">Cancelar</button><button disabled={saving} onClick={handleSave} className="flex-[2] h-12 bg-green-600 hover:bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all shadow-xl shadow-green-600/20 active:scale-95">{saving ? <Loader2 className="size-4 animate-spin"/> : "GUARDAR CAMBIOS"}</button></div>
                    </div>
                  )}
                </div>

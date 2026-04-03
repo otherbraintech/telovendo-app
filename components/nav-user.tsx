@@ -100,12 +100,6 @@ export function NavUser({
                   <span className="text-[9px] font-black uppercase tracking-widest">Perfil</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="gap-3 p-3 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground cursor-pointer rounded-none border-b border-sidebar-border/5">
-                <Link href="/settings" className="flex items-center gap-3 w-full">
-                  <Settings className="size-3" />
-                  <span className="text-[9px] font-black uppercase tracking-widest">Configuración</span>
-                </Link>
-              </DropdownMenuItem>
               <DropdownMenuItem asChild className="gap-3 p-3 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground cursor-pointer rounded-none">
                 <Link href="/notifications" className="flex items-center gap-3 w-full">
                   <Bell className="size-3" />
