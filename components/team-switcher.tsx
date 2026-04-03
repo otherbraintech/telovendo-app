@@ -55,7 +55,7 @@ export function TeamSwitcher({
               size="lg"
               className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300 rounded-none border-b border-sidebar-border/50"
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-none bg-blue-600 text-white font-black italic shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+              <div className="flex aspect-square size-8 items-center justify-center rounded-none bg-transparent">
                 {activeTeam.logo}
               </div>
               <div className="grid flex-1 text-left text-[10px] leading-tight uppercase font-black tracking-widest text-foreground/80 transition-colors">
@@ -72,7 +72,7 @@ export function TeamSwitcher({
             sideOffset={4}
           >
             <DropdownMenuLabel className="text-[9px] uppercase font-black tracking-[0.4em] text-blue-500 px-3 py-3 border-b border-border mb-1">
-              Seleccionar Unidad
+              SELECCIONAR PROYECTO
             </DropdownMenuLabel>
             {teams.map((team) => (
               <DropdownMenuItem

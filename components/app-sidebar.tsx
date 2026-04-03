@@ -38,13 +38,13 @@ export function AppSidebar({
     ? projects.map(p => ({
         name: p.name,
         logo: <img src="/iconTeloVendo.svg" className="size-4 animate-pulse brightness-125" />,
-        plan: "Unidad Activa",
+        plan: "PROYECTO ACTIVO",
         id: p.id
       }))
     : [{
         name: "Sistema Vacío",
         logo: <img src="/iconTeloVendo.svg" className="size-4 opacity-50 grayscale" />,
-        plan: "Inicia Secuencia",
+        plan: "SISTEMA IDLE",
         id: "none"
       }];
 

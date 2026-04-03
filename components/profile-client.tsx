@@ -120,7 +120,9 @@ export default function ProfilePage({ user, stats }: { user: any, stats: any }) 
                 <Calendar className="size-3 mt-0.5 text-muted-foreground/40" />
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[9px] text-muted-foreground opacity-50 uppercase font-bold">Unido al sistema</span>
-                  <span className="text-[10px] font-bold uppercase tracking-tighter">{new Date(user.createdAt).toLocaleDateString("es-BO")}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-tighter">
+                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString("es-BO") : "FECHA NO DISPONIBLE"}
+                  </span>
                 </div>
               </div>
             </div>

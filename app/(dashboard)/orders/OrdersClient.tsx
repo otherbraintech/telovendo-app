@@ -26,6 +26,27 @@ const FilePreview = memo(({ file, className }: { file: File | string, className?
 });
 FilePreview.displayName = "FilePreview";
 
+const OrderCardImage = ({ url, alt, className }: { url: string, alt: string, className?: string }) => {
+  const [loading, setLoading] = useState(true);
+  
+  return (
+    <div className="relative w-full h-full">
+      {loading && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/20 animate-pulse">
+          <Loader2 className="size-6 text-blue-500/20 animate-spin" />
+        </div>
+      )}
+      <img
+        src={url}
+        alt={alt}
+        className={`${className} ${loading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-500`}
+        onLoad={() => setLoading(false)}
+        onError={() => setLoading(false)}
+      />
+    </div>
+  );
+};
+
 export default function OrdersClient() {
   const { selectedProjectId } = useProjectStore()
   const [orders, setOrders] = useState<any[]>([])
@@ -395,7 +416,7 @@ export default function OrdersClient() {
             <div key={order.id} onClick={() => { setSelectedOrder(order); setActiveImageIndex(0); }} className="group relative bg-card border border-border flex flex-col overflow-hidden hover:border-blue-500/50 transition-all duration-500 shadow-sm cursor-pointer">
               <div className="relative aspect-square bg-muted/20 border-b border-border overflow-hidden">
                 {order.imageUrls && order.imageUrls.length > 0 ? (
-                  <img src={order.imageUrls[0]} alt={order.orderName} className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-110" />
+                  <OrderCardImage url={order.imageUrls[0]} alt={order.orderName} className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-110" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center"><img src="/iconTeloVendo.svg" alt="Logo" className="size-20 opacity-5 dark:invert" /></div>
                 )}
@@ -458,8 +479,8 @@ export default function OrdersClient() {
                       <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Bots</Label><Input type="number" className="h-11 bg-muted/20 border-border text-base font-black" name="quantity" value={editForm.quantity} onChange={handleEditChange} min={1} /></div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Categoría</Label><Select value={editForm.listingCategory} onValueChange={v => setEditForm({...editForm, listingCategory: v})}><SelectTrigger className="h-11 bg-muted/20 text-[10px] font-bold uppercase"><SelectValue/></SelectTrigger><SelectContent position="popper" className="z-50">{["ELECTRONICA", "MUEBLES", "ROPA_CALZADO", "VEHICULOS", "BIENES_RAICES", "JUGUETES_JUEGOS", "ARTICULOS_HOGAR", "DEPORTES_FITNESS", "HERRAMIENTAS", "INSTRUMENTOS_MUSICALES", "VARIOS"].map(c => (<SelectItem key={c} value={c} className="text-[10px] font-bold uppercase">{c.replace('_', ' ')}</SelectItem>))}</SelectContent></Select></div>
-                      <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Condición</Label><Select value={editForm.listingCondition} onValueChange={v => setEditForm({...editForm, listingCondition: v})}><SelectTrigger className="h-11 bg-muted/20 text-[10px] font-bold uppercase"><SelectValue/></SelectTrigger><SelectContent position="popper" className="z-50"><SelectItem value="NUEVO">NUEVO</SelectItem><SelectItem value="USADO_COMO_NUEVO">COMO NUEVO</SelectItem><SelectItem value="USADO_BUEN_ESTADO">BUEN ESTADO</SelectItem><SelectItem value="USADO_ACEPTABLE">ACEPTABLE</SelectItem></SelectContent></Select></div>
+                      <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Categoría</Label><Select value={editForm.listingCategory} onValueChange={v => setEditForm({...editForm, listingCategory: v})}><SelectTrigger className="w-full h-11 bg-muted/20 text-[10px] font-bold uppercase"><SelectValue/></SelectTrigger><SelectContent position="popper" className="z-50">{["ELECTRONICA", "MUEBLES", "ROPA_CALZADO", "VEHICULOS", "BIENES_RAICES", "JUGUETES_JUEGOS", "ARTICULOS_HOGAR", "DEPORTES_FITNESS", "HERRAMIENTAS", "INSTRUMENTOS_MUSICALES", "VARIOS"].map(c => (<SelectItem key={c} value={c} className="text-[10px] font-bold uppercase">{c.replace('_', ' ')}</SelectItem>))}</SelectContent></Select></div>
+                      <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Condición</Label><Select value={editForm.listingCondition} onValueChange={v => setEditForm({...editForm, listingCondition: v})}><SelectTrigger className="w-full h-11 bg-muted/20 text-[10px] font-bold uppercase"><SelectValue/></SelectTrigger><SelectContent position="popper" className="z-50"><SelectItem value="NUEVO">NUEVO</SelectItem><SelectItem value="USADO_COMO_NUEVO">COMO NUEVO</SelectItem><SelectItem value="USADO_BUEN_ESTADO">BUEN ESTADO</SelectItem><SelectItem value="USADO_ACEPTABLE">ACEPTABLE</SelectItem></SelectContent></Select></div>
                     </div>
                     <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Descripción Detallada</Label><Textarea className="min-h-[140px] bg-muted/20 border-border text-xs leading-relaxed resize-none p-4" name="listingDescription" value={editForm.listingDescription || ""} onChange={handleEditChange} /></div>
                  </div>
@@ -502,9 +523,20 @@ export default function OrdersClient() {
                   )}
                   {isEditing && (<label className="mt-4 border border-dashed border-blue-500/30 p-6 flex flex-col items-center justify-center gap-2 cursor-pointer bg-blue-500/5 hover:bg-blue-500/10 transition-all group cursor-pointer"><input type="file" multiple accept="image/*" className="hidden" onChange={handleEditFileChange} /><ImagePlus className="size-6 text-blue-500 group-hover:scale-125 transition-transform" /><p className="text-[10px] font-black uppercase tracking-widest text-blue-500">Añadir</p></label>)}
                </div>
-               <div className="flex-1 bg-card p-6 md:p-12 space-y-6 overflow-y-auto">
+               <div className="flex-1 bg-card p-6 md:p-10 space-y-6 overflow-y-auto">
                  {!isEditing ? (
                    <div className="flex flex-col h-full">
+                     {/* ACTIONS BAR (MOVED UP FOR ACCESS) */}
+                     <div className="mb-8 pb-6 flex flex-wrap gap-3 border-b border-border">
+                        <button onClick={() => { setSelectedOrder(null); setIsEditing(false); }} className="flex-1 h-12 border border-border text-[10px] font-black uppercase tracking-[0.2em] hover:bg-muted transition-all cursor-pointer md:hidden">Cerrar</button>
+                        <button onClick={() => { setEditForm({...selectedOrder}); setIsEditing(true); }} className="flex-1 h-12 border border-blue-500/30 text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 hover:bg-blue-500/5 transition-all cursor-pointer md:h-11 md:px-8 md:flex-none">Editar</button>
+                        {selectedOrder.status === "LISTA" && (<button onClick={handleSendToBots} disabled={saving} className="flex-[2] h-12 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-blue-500/20 active:scale-95 cursor-pointer md:h-11 md:flex-none md:px-10">{saving ? <Loader2 className="size-4 animate-spin"/> : "🚀 Enviar"}</button>)}
+                        <div className="flex w-full md:w-auto gap-3 md:hidden">
+                          <button onClick={() => handleNavigate('prev')} className="flex-1 md:w-12 h-12 border border-border flex items-center justify-center hover:bg-muted transition-all active:scale-90 cursor-pointer"><ChevronLeft className="size-5"/></button>
+                          <button onClick={() => handleNavigate('next')} className="flex-1 md:w-12 h-12 border border-border flex items-center justify-center hover:bg-muted transition-all active:scale-90 cursor-pointer"><ChevronRight className="size-5"/></button>
+                        </div>
+                     </div>
+
                      <div className="mb-6">
                        <div className="flex items-center gap-4 mb-2">
                          <span className="text-3xl md:text-4xl font-black tracking-tighter text-blue-500 tabular-nums">Bs {selectedOrder.listingPrice}</span>
@@ -520,15 +552,6 @@ export default function OrdersClient() {
                            <div className="space-y-1.5"><h4 className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-[0.3em]">Condición</h4><p className="text-xs font-bold uppercase">{selectedOrder.listingCondition?.replace(/_/g, ' ')}</p></div>
                         </div>
                      </div>
-                     <div className="mt-8 pt-6 flex flex-wrap gap-3 border-t border-border">
-                       <button onClick={() => { setSelectedOrder(null); setIsEditing(false); }} className="flex-1 h-12 border border-border text-[10px] font-black uppercase tracking-[0.2em] hover:bg-muted transition-all cursor-pointer">Cerrar</button>
-                       <button onClick={() => { setEditForm({...selectedOrder}); setIsEditing(true); }} className="flex-1 h-12 border border-blue-500/30 text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 hover:bg-blue-500/5 transition-all cursor-pointer">Editar</button>
-                       {selectedOrder.status === "LISTA" && (<button onClick={handleSendToBots} disabled={saving} className="flex-[2] h-12 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-blue-500/20 active:scale-95 cursor-pointer">{saving ? <Loader2 className="size-4 animate-spin"/> : "🚀 Enviar"}</button>)}
-                       <div className="flex w-full md:w-auto gap-3">
-                         <button onClick={() => handleNavigate('prev')} className="flex-1 md:w-12 h-12 border border-border flex items-center justify-center hover:bg-muted transition-all active:scale-90 cursor-pointer"><ChevronLeft className="size-5"/></button>
-                         <button onClick={() => handleNavigate('next')} className="flex-1 md:w-12 h-12 border border-border flex items-center justify-center hover:bg-muted transition-all active:scale-90 cursor-pointer"><ChevronRight className="size-5"/></button>
-                       </div>
-                     </div>
                    </div>
                  ) : (
                    <div className="space-y-6">
@@ -537,8 +560,8 @@ export default function OrdersClient() {
                         <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Título</Label><Input className="h-11 bg-muted/20 border-border text-xs font-bold" name="listingTitle" value={editForm.listingTitle || ""} onChange={handleEditChange} /></div>
                         <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Precio Bs</Label><Input type="number" className="h-11 bg-muted/20 border-border text-base font-black text-blue-500" name="listingPrice" value={editForm.listingPrice || ""} onChange={handleEditChange} /></div>
                         <div className="grid grid-cols-2 gap-4">
-                           <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Categoría</Label><Select value={editForm.listingCategory} onValueChange={v => setEditForm({...editForm, listingCategory: v})}><SelectTrigger className="h-11 bg-muted/20 text-[10px] font-bold uppercase"><SelectValue/></SelectTrigger><SelectContent position="popper" className="z-50">{["ELECTRONICA", "MUEBLES", "ROPA_CALZADO", "VEHICULOS", "BIENES_RAICES", "JUGUETES_JUEGOS", "ARTICULOS_HOGAR", "DEPORTES_FITNESS", "HERRAMIENTAS", "INSTRUMENTOS_MUSICALES", "VARIOS"].map(c => (<SelectItem key={c} value={c} className="text-[10px] font-bold uppercase">{c.replace('_', ' ')}</SelectItem>))}</SelectContent></Select></div>
-                           <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Condición</Label><Select value={editForm.listingCondition} onValueChange={v => setEditForm({...editForm, listingCondition: v})}><SelectTrigger className="h-11 bg-muted/20 text-[10px] font-bold uppercase"><SelectValue/></SelectTrigger><SelectContent position="popper" className="z-50"><SelectItem value="NUEVO">NUEVO</SelectItem><SelectItem value="USADO_COMO_NUEVO">COMO NUEVO</SelectItem><SelectItem value="USADO_BUEN_ESTADO">BUEN ESTADO</SelectItem><SelectItem value="USADO_ACEPTABLE">ACEPTABLE</SelectItem></SelectContent></Select></div>
+                           <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Categoría</Label><Select value={editForm.listingCategory} onValueChange={v => setEditForm({...editForm, listingCategory: v})}><SelectTrigger className="w-full h-11 bg-muted/20 text-[10px] font-bold uppercase"><SelectValue/></SelectTrigger><SelectContent position="popper" className="z-50">{["ELECTRONICA", "MUEBLES", "ROPA_CALZADO", "VEHICULOS", "BIENES_RAICES", "JUGUETES_JUEGOS", "ARTICULOS_HOGAR", "DEPORTES_FITNESS", "HERRAMIENTAS", "INSTRUMENTOS_MUSICALES", "VARIOS"].map(c => (<SelectItem key={c} value={c} className="text-[10px] font-bold uppercase">{c.replace('_', ' ')}</SelectItem>))}</SelectContent></Select></div>
+                           <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Condición</Label><Select value={editForm.listingCondition} onValueChange={v => setEditForm({...editForm, listingCondition: v})}><SelectTrigger className="w-full h-11 bg-muted/20 text-[10px] font-bold uppercase"><SelectValue/></SelectTrigger><SelectContent position="popper" className="z-50"><SelectItem value="NUEVO">NUEVO</SelectItem><SelectItem value="USADO_COMO_NUEVO">COMO NUEVO</SelectItem><SelectItem value="USADO_BUEN_ESTADO">BUEN ESTADO</SelectItem><SelectItem value="USADO_ACEPTABLE">ACEPTABLE</SelectItem></SelectContent></Select></div>
                         </div>
                         <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Descripción</Label><Textarea className="min-h-[180px] bg-muted/20 border-border text-xs leading-relaxed resize-none p-4" name="listingDescription" value={editForm.listingDescription || ""} onChange={handleEditChange} /></div>
                       </div>
