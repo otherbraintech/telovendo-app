@@ -18,6 +18,7 @@ import {
   Database,
   RefreshCw
 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface HistoryClientProps {
   initialLogs: any[]
@@ -48,18 +49,19 @@ export default function HistoryClient({ initialLogs }: HistoryClientProps) {
 
         <div className="flex items-center gap-3">
           <div className="relative group">
-            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-blue-500/40 group-focus-within:text-blue-500 transition-colors" />
-            <select 
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="h-12 bg-card/50 backdrop-blur-sm border border-border/60 pl-10 pr-10 text-[10px] font-black uppercase tracking-widest outline-none focus:border-blue-500/50 transition-all appearance-none cursor-pointer rounded-none hover:bg-muted/30"
-            >
-              <option value="TODOS">TODOS LOS EVENTOS</option>
-              <option value="BOT">CENTRAL DE BOTS</option>
-              <option value="SISTEMA">NÚCLEO KERNEL</option>
-              <option value="PROYECTO">INFRAESTRUCTURA</option>
-              <option value="PUBLICACIÓN">ÓRDENES ACTIVAS</option>
-            </select>
+            <Select value={filter} onValueChange={setFilter}>
+              <SelectTrigger className="h-12 w-56 bg-card/50 backdrop-blur-sm border border-border/60 pl-10 pr-4 text-[10px] font-black uppercase tracking-widest outline-none focus:ring-1 focus:ring-blue-500/50 transition-all rounded-none hover:bg-muted/30">
+                <Filter className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-blue-500/40" />
+                <SelectValue placeholder="TODOS LOS EVENTOS" />
+              </SelectTrigger>
+              <SelectContent position="popper" className="z-50 bg-card border-border rounded-none shadow-2xl">
+                <SelectItem value="TODOS" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">TODOS LOS EVENTOS</SelectItem>
+                <SelectItem value="BOT" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">CENTRAL DE BOTS</SelectItem>
+                <SelectItem value="SISTEMA" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">NÚCLEO KERNEL</SelectItem>
+                <SelectItem value="PROYECTO" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">INFRAESTRUCTURA</SelectItem>
+                <SelectItem value="PUBLICACIÓN" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">ÓRDENES ACTIVAS</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
