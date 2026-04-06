@@ -11,5 +11,5 @@ export default async function OrderGenerationsPage({ params }: { params: { id: s
     // Pero es mejor pasar el array vacío al cliente
   }
 
-  return <GenerationsClient initialGenerations={generations} />;
+  return <GenerationsClient initialGenerations={generations} mode="detail" />;
 }

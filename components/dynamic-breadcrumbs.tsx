@@ -18,7 +18,7 @@ const routeMap: Record<string, string> = {
   projects: "Mis Proyectos",
   devices: "Dispositivos",
   history: "Historial",
-  generations: "Monitoreo Bots",
+  generations: "Mis Bots en Vivo",  users: "Gestión Usuarios",
   profile: "Mi Perfil",
 };
 
@@ -63,11 +63,11 @@ export function DynamicBreadcrumbs() {
           const isLast = index === segments.length - 1;
           const isId = segment.length > 20 || (segment.startsWith("cmn") && segment.length > 10);
           
-          // Omitir el nombre de la orden si estamos viendo muchas (vista general de monitoreo)
-          // Solo mostramos el nombre de la orden si es una página específica (ID en la URL) o si el dialog está abierto en orders
+          // Omitir 'generations' e 'isId' si es una ejecución específica (lo manejaremos al final)
+          if (isSpecificExecution && (segment === "generations" || isId)) return null;
           
+          // Omitir el ID si ya tenemos el nombre de la orden para mostrarlo más limpio
           if (isId && activeOrderName) return null;
-          if (segment === "generations" && isSpecificExecution) return null;
 
           const label = isId ? `Ejecución: ${segment.slice(-6).toUpperCase()}` : (routeMap[segment] || segment.toUpperCase());
 
@@ -89,21 +89,32 @@ export function DynamicBreadcrumbs() {
           );
         })}
 
-        {/* NOMBRE PUBLICACIÓN FINAL (Condicional) */}
-        {activeOrderName && (
-          // Lo mostramos en 'orders' (porque indica el dialog abierto)
-          // O lo mostramos en 'generations' SOLO SI es una ejecución específica (URL con ID)
-          (segments.includes("orders") || (segments.includes("generations") && isSpecificExecution)) && (
-            <>
-              <BreadcrumbSeparator className="text-muted-foreground/30 animate-in fade-in" />
-              <BreadcrumbItem>
-                <BreadcrumbPage className="text-[10px] font-black uppercase tracking-widest text-blue-500 animate-in slide-in-from-left-2 transition-all">
-                  {activeOrderName}
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </>
-          )
-        )}
+        {/* NOMBRE PUBLICACIÓN + MONITOREO BOTS (Ordenado para Detalle) */}
+        {isSpecificExecution && activeOrderName ? (
+          <>
+            <BreadcrumbSeparator className="text-muted-foreground/30" />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/orders" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-blue-500 transition-all cursor-pointer">
+                {activeOrderName}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator className="text-muted-foreground/30" />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="text-[10px] font-black uppercase tracking-widest text-blue-500">
+                Mis Bots en Vivo
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </>
+        ) : activeOrderName && segments.includes("orders") ? (
+          <>
+            <BreadcrumbSeparator className="text-muted-foreground/30 animate-in fade-in" />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="text-[10px] font-black uppercase tracking-widest text-blue-500 animate-in slide-in-from-left-2 transition-all">
+                {activeOrderName}
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </>
+        ) : null}
       </BreadcrumbList>
     </Breadcrumb>
   );

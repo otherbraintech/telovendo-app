@@ -67,7 +67,7 @@ const statusLabel: Record<string, string> = {
   FALLIDA: "FALLIDA",
 };
 
-export default function GenerationsClient({ initialGenerations }: { initialGenerations: Generation[] }) {
+export default function GenerationsClient({ initialGenerations, mode = "overview" }: { initialGenerations: Generation[], mode?: "overview" | "detail" }) {
   const [generations, setGenerations] = useState<Generation[]>(initialGenerations);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("TODOS");
@@ -207,20 +207,38 @@ export default function GenerationsClient({ initialGenerations }: { initialGener
     SINPUBLICAR: { icon: AlertCircle, color: "text-gray-500", bg: "bg-gray-500/10", label: "SIN PUBLICAR" },
   };
 
+  const detailOrderName = mode === "detail" && groupedOrders.length > 0
+    ? (groupedOrders[0].order.listingTitle || groupedOrders[0].order.orderName)
+    : null;
+
   return (
     <div className="space-y-8">
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="flex flex-col gap-1">
+          {mode === "detail" && (
+            <button onClick={() => router.push("/generations")} className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground hover:text-blue-500 transition-colors mb-2 cursor-pointer w-fit">
+              <Play className="size-2.5 rotate-180" /> Volver a todos los envíos
+            </button>
+          )}
           <h1 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-foreground">
-            Estado de <span className="text-blue-500">Envío</span>
+            {mode === "detail" ? (
+              <>Detalle de <span className="text-blue-500">Publicación</span></>
+            ) : (
+              <>Estado de <span className="text-blue-500">Envío</span></>
+            )}
           </h1>
-          <p className="text-xs text-muted-foreground">Rastreo en tiempo real de tus publicaciones.</p>
+          <p className="text-xs text-muted-foreground">
+            {mode === "detail" && detailOrderName
+              ? <>{detailOrderName} — Control individual de bots asignados.</>
+              : <>Rastreo en tiempo real de tus publicaciones.</>
+            }
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3 text-muted-foreground group-focus-within:text-blue-500 transition-colors" />
-            <input type="text" placeholder="Buscar ejecución..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-48 sm:w-64 bg-card border border-border px-4 py-2 pl-9 text-xs focus:ring-1 focus:ring-blue-500 outline-none text-foreground" />
+            <input type="text" placeholder={mode === "detail" ? "Buscar bot..." : "Buscar publicación..."} value={search} onChange={(e) => setSearch(e.target.value)} className="w-48 sm:w-64 bg-card border border-border px-4 py-2 pl-9 text-xs focus:ring-1 focus:ring-blue-500 outline-none text-foreground" />
           </div>
         </div>
       </div>
