@@ -34,8 +34,13 @@ export function TeamSwitcher({
   }[]
 }) {
   const { isMobile } = useSidebar()
-  const { selectedProjectId, setSelectedProjectId } = useProjectStore()
+  const { selectedProjectId, setSelectedProjectId, setProjects } = useProjectStore()
   const router = useRouter()
+  
+  // Sync projects to store for dynamic breadcrumbs
+  useEffect(() => {
+    setProjects(teams.map(t => ({ id: t.id, name: t.name })))
+  }, [teams, setProjects])
   
   // Set default project if none selected
   useEffect(() => {

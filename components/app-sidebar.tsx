@@ -53,7 +53,6 @@ export function AppSidebar({
       title: "Resumen",
       url: "/dashboard",
       icon: <LayoutDashboard className="size-4 text-blue-600" />,
-      isActive: true,
     },
     {
       title: "Mis publicaciones",
@@ -66,11 +65,24 @@ export function AppSidebar({
       icon: <img src="/iconTeloVendo.svg" className="size-4 brightness-110" />,
     },
     {
+      title: "Monitoreo Bots",
+      url: "/generations",
+      icon: <Cpu className="size-4 text-purple-500" />,
+    },
+  ];
+
+  if (user.role === "ADMIN") {
+    navMain.push({
+      title: "Dispositivos",
+      url: "/devices",
+      icon: <Bot className="size-4 text-emerald-500" />,
+    });
+    navMain.push({
       title: "Historial",
       url: "/history",
       icon: <History className="size-4 text-neutral-500" />,
-    },
-  ]
+    });
+  }
 
   const userData = {
     name: user.name,

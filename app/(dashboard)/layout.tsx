@@ -1,13 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
+import { DynamicBreadcrumbs } from "@/components/dynamic-breadcrumbs"
 import {
   SidebarInset,
   SidebarProvider,
@@ -37,9 +30,9 @@ export default async function DashboardLayout({
         <SidebarInset className="bg-transparent">
           <header className="flex h-14 md:h-16 shrink-0 items-center justify-between gap-2 border-b border-blue-500/10 px-4 md:px-6 bg-background/80 backdrop-blur-md sticky top-0 z-50">
             <div className="flex items-center gap-3">
-              <SidebarTrigger className="text-muted-foreground hover:text-blue-500 transition-colors" />
+              <SidebarTrigger className="text-muted-foreground hover:text-blue-500 transition-colors cursor-pointer" />
               <div className="h-4 w-[1px] bg-border" />
-              <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 hidden sm:inline">TeloVendo</span>
+              <DynamicBreadcrumbs />
             </div>
             <ModeToggle />
           </header>
