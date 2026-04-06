@@ -102,54 +102,20 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator className="bg-blue-500/10" />
-            <DropdownMenuItem 
-              className="gap-3 p-3 focus:bg-red-500 focus:text-white cursor-pointer rounded-none"
-              onClick={() => setShowLogoutConfirm(true)}
-            >
-              <LogOutIcon className="size-3" />
-              <span className="text-[9px] font-black uppercase tracking-widest">Cerrar sesión</span>
-            </DropdownMenuItem>
+            <form action={logout}>
+              <DropdownMenuItem 
+                asChild
+                className="gap-3 p-3 focus:bg-red-500 focus:text-white cursor-pointer rounded-none"
+              >
+                <button type="submit" className="flex items-center gap-3 w-full border-none bg-transparent p-0">
+                  <LogOutIcon className="size-3" />
+                  <span className="text-[9px] font-black uppercase tracking-widest">Cerrar sesión</span>
+                </button>
+              </DropdownMenuItem>
+            </form>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
-
-      {/* LOGOUT CONFIRMATION MODAL */}
-      {showLogoutConfirm && (
-        <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowLogoutConfirm(false) }}
-        >
-          <div className="w-full max-w-sm bg-card border border-border p-8 space-y-6 shadow-2xl relative">
-            <div className="flex flex-col items-center text-center gap-4">
-              <div className="p-3 bg-red-500/10 text-red-500 rounded-none border border-red-500/20">
-                <AlertTriangle className="size-6" />
-              </div>
-              <div className="space-y-1">
-                <h2 className="text-xl font-black uppercase tracking-tight text-foreground">¿Cerrar Sesión?</h2>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Tu sesión actual terminará y deberás volver a ingresar tus credenciales.</p>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 h-11 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground border border-border hover:border-foreground/20 transition-all cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                full-width="true"
-                onClick={handleLogout}
-                disabled={loading}
-                className="flex-[2] h-11 bg-red-600 hover:bg-neutral-900 disabled:opacity-30 text-white font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all cursor-pointer border border-red-500/50 hover:border-white/20"
-              >
-                {loading ? <Loader2 className="size-4 animate-spin text-white" /> : "TERMINAR SESIÓN"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </SidebarMenu>
   )
 }
