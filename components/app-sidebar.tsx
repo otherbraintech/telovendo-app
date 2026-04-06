@@ -78,6 +78,11 @@ export function AppSidebar({
       icon: <Bot className="size-4 text-emerald-500" />,
     });
     navMain.push({
+      title: "Gestión Usuarios",
+      url: "/users",
+      icon: <ShieldCheck className="size-4 text-blue-500" />,
+    });
+    navMain.push({
       title: "Historial",
       url: "/history",
       icon: <History className="size-4 text-neutral-500" />,

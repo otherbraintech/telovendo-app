@@ -437,13 +437,13 @@ export default function OrdersClient() {
     } catch (e: any) {
       console.error(e)
       if (e.message === "No hay dispositivos disponibles") {
-        toast.error("❌ No hay bots libres", {
-          description: "Por favor, libera dispositivos o agrega nuevos para continuar.",
+        toast.error("¡Atención!", {
+          description: "No encontramos bots libres para esta tarea. Libera un dispositivo o intenta nuevamente en unos minutos.",
           duration: 5000
         })
       } else {
         toast.error("Error al enviar", {
-          description: e.message
+          description: "No pudimos procesar el envío. Por favor, revisa tu conexión."
         })
       }
     } finally {
@@ -464,13 +464,13 @@ export default function OrdersClient() {
     } catch (error: any) {
       console.error(error)
       if (error.message === "No hay dispositivos disponibles") {
-        toast.error("❌ No hay bots libres", {
-          description: "Por favor, libera dispositivos o agrega nuevos para continuar.",
+        toast.error("¡Atención!", {
+          description: "No encontramos bots libres para esta tarea. Libera un dispositivo o intenta nuevamente en unos minutos.",
           duration: 5000
         })
       } else {
         toast.error("Error al enviar", {
-          description: error.message
+          description: "No pudimos procesar el envío. Por favor, revisa tu conexión."
         })
       }
     } finally {
