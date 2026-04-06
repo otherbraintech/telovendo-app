@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { toast } from "sonner"
 
 const FilePreview = memo(({ file, className }: { file: File | string, className?: string }) => {
   const [src, setSrc] = useState<string>('');
@@ -432,8 +433,19 @@ export default function OrdersClient() {
       const updated = await sendOrderToBots(selectedOrder.id)
       setOrders(orders.map(o => o.id === selectedOrder.id ? updated : o))
       setSelectedOrder(updated)
-    } catch (e) {
+      toast.success("🚀 Publicación preparada exitosamente")
+    } catch (e: any) {
       console.error(e)
+      if (e.message === "No hay dispositivos disponibles") {
+        toast.error("❌ No hay bots libres", {
+          description: "Por favor, libera dispositivos o agrega nuevos para continuar.",
+          duration: 5000
+        })
+      } else {
+        toast.error("Error al enviar", {
+          description: e.message
+        })
+      }
     } finally {
       setSaving(false)
     }
@@ -448,8 +460,19 @@ export default function OrdersClient() {
       if (selectedOrder?.id === orderId) {
         setSelectedOrder(updated)
       }
-    } catch (error) {
+      toast.success("🚀 Publicación preparada exitosamente")
+    } catch (error: any) {
       console.error(error)
+      if (error.message === "No hay dispositivos disponibles") {
+        toast.error("❌ No hay bots libres", {
+          description: "Por favor, libera dispositivos o agrega nuevos para continuar.",
+          duration: 5000
+        })
+      } else {
+        toast.error("Error al enviar", {
+          description: error.message
+        })
+      }
     } finally {
       setSaving(false)
     }
@@ -561,14 +584,14 @@ export default function OrdersClient() {
   }, [selectedProjectId])
 
   const statusLabel: Record<string, string> = {
-    LISTA: "Pendiente",
-    GENERANDO: "Publicando...",
-    GENERADA: "Publicada",
-    COMPLETADA: "Completada",
-    CANCELADA: "Cancelada",
-    PAUSADA: "Pausada",
-    REINTENTAR: "Reintentando",
-    FALLIDA: "Falló",
+    LISTA: "LISTA PARA BOT",
+    GENERANDO: "PUBLICANDO...",
+    GENERADA: "PUBLICADA",
+    COMPLETADA: "COMPLETADA",
+    CANCELADA: "CANCELADA",
+    PAUSADA: "PAUSADA",
+    REINTENTAR: "REINTENTANDO",
+    FALLIDA: "FALLIDA",
   }
 
   useEffect(() => {
@@ -891,8 +914,21 @@ export default function OrdersClient() {
             <button onClick={(e) => { e.stopPropagation(); handleNavigate('next'); }} className="size-16 bg-white/5 hover:bg-blue-600 text-white rounded-full flex items-center justify-center backdrop-blur-md border border-white/10 transition-all pointer-events-auto hover:scale-110 active:scale-95 cursor-pointer"><ChevronRight className="size-8" /></button>
           </div>
           <div className="relative w-full max-w-5xl h-full md:h-auto bg-card border border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in-95 duration-500 flex flex-col md:flex-row max-h-[100vh] md:max-h-[90vh] overflow-hidden">
-             <button onClick={() => { setSelectedOrder(null); setIsEditing(false); }} className="absolute -top-3 -right-3 md:-top-6 md:-right-6 size-10 md:size-14 bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition-all z-[80] shadow-2xl border border-white/10 group active:scale-90 cursor-pointer hidden md:flex"><X className="size-5 md:size-7 group-hover:rotate-90 transition-transform duration-300" /></button>
-             <button onClick={() => { setSelectedOrder(null); setIsEditing(false); }} className="absolute top-4 right-4 size-10 bg-black/60 text-white flex items-center justify-center rounded-full z-[80] md:hidden"><X className="size-5" /></button>
+             {/* CLOSE BUTTON (DESKTOP) */}
+             <button 
+               onClick={() => { setSelectedOrder(null); setIsEditing(false); }} 
+               className="absolute top-6 right-6 size-10 bg-muted/50 hover:bg-blue-600 text-foreground hover:text-white flex items-center justify-center rounded-full transition-all z-[80] border border-border group active:scale-90 cursor-pointer hidden md:flex md:items-center md:justify-center"
+             >
+               <X className="size-5 group-hover:rotate-90 transition-transform duration-300" />
+             </button>
+
+             {/* CLOSE BUTTON (MOBILE) */}
+             <button 
+               onClick={() => { setSelectedOrder(null); setIsEditing(false); }} 
+               className="absolute top-4 right-4 size-10 bg-black/60 backdrop-blur-md text-white flex items-center justify-center rounded-full z-[80] md:hidden border border-white/10"
+             >
+               <X className="size-5" />
+             </button>
              <div className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
                <div className="w-full md:w-[48%] bg-muted/20 flex flex-col border-b md:border-b-0 md:border-r border-border p-4 md:p-6 shrink-0 overflow-y-auto custom-scrollbar">
                   <div className="relative aspect-square w-full bg-black/20 flex items-center justify-center overflow-hidden border border-border shadow-inner">
@@ -1071,7 +1107,7 @@ export default function OrdersClient() {
                 </div>
               </div>
             </div>
-          </div>
+        </div>
       )}
     </div>
   );

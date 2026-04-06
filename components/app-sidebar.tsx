@@ -65,7 +65,7 @@ export function AppSidebar({
       icon: <img src="/iconTeloVendo.svg" className="size-4 brightness-110" />,
     },
     {
-      title: "Monitoreo Bots",
+      title: "Mis Bots en Vivo",
       url: "/generations",
       icon: <Cpu className="size-4 text-purple-500" />,
     },

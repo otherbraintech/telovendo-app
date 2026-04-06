@@ -56,6 +56,17 @@ interface Generation {
   } | null;
 }
 
+const statusLabel: Record<string, string> = {
+  LISTA: "LISTA PARA BOT",
+  GENERANDO: "PUBLICANDO...",
+  GENERADA: "PUBLICADA",
+  COMPLETADA: "COMPLETADA",
+  CANCELADA: "CANCELADA",
+  PAUSADA: "PAUSADA",
+  REINTENTAR: "REINTENTANDO",
+  FALLIDA: "FALLIDA",
+};
+
 export default function GenerationsClient({ initialGenerations }: { initialGenerations: Generation[] }) {
   const [generations, setGenerations] = useState<Generation[]>(initialGenerations);
   const [search, setSearch] = useState("");
@@ -192,6 +203,7 @@ export default function GenerationsClient({ initialGenerations }: { initialGener
     PENDIENTE: { icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10", label: "PENDIENTE" },
     PUBLICADO: { icon: CheckCircle2, color: "text-green-500", bg: "bg-green-500/10", label: "PUBLICADO" },
     CANCELADO: { icon: XCircle, color: "text-red-500", bg: "bg-red-500/10", label: "CANCELADO" },
+    PAUSADO: { icon: Pause, color: "text-amber-600", bg: "bg-amber-600/10", label: "PAUSADO" },
     SINPUBLICAR: { icon: AlertCircle, color: "text-gray-500", bg: "bg-gray-500/10", label: "SIN PUBLICAR" },
   };
 
@@ -201,9 +213,9 @@ export default function GenerationsClient({ initialGenerations }: { initialGener
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-foreground">
-            Monitoreo <span className="text-blue-500">Ejecución</span>
+            Estado de <span className="text-blue-500">Envío</span>
           </h1>
-          <p className="text-xs text-muted-foreground">Analítica y control de publicaciones por bot.</p>
+          <p className="text-xs text-muted-foreground">Rastreo en tiempo real de tus publicaciones.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative group">
@@ -238,9 +250,9 @@ export default function GenerationsClient({ initialGenerations }: { initialGener
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {order.status === "LISTA" ? (
+                  {(order.status === "LISTA" || order.status === "GENERANDO") ? (
                     <button onClick={() => handleChangeOrderStatus(order.id, "PAUSADA")} className="h-10 px-5 bg-amber-500 hover:bg-amber-400 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer"><Pause className="size-4 fill-current" /> Pausar</button>
-                  ) : (order.status === "PAUSADA" || order.status === "GENERANDO") ? (
+                  ) : order.status === "PAUSADA" ? (
                     <button onClick={() => handleChangeOrderStatus(order.id, "LISTA")} className="h-10 px-5 bg-green-600 hover:bg-green-500 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer"><Play className="size-4 fill-current" /> Reanudar</button>
                   ) : null}
                   <button onClick={() => handleCancelOrder(order.id)} disabled={order.status === "CANCELADA"} className="h-10 px-5 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer"><Ban className="size-4" /> Cancelar Todo</button>
@@ -276,18 +288,59 @@ export default function GenerationsClient({ initialGenerations }: { initialGener
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-6"><div className="flex items-center gap-3"><div className="size-8 bg-blue-500/5 flex items-center justify-center border border-blue-500/10"><Smartphone className="size-4 text-blue-500" /></div><span className="text-[11px] font-black uppercase text-foreground">{gen.device?.deviceName || "SIN ASIGNAR"}</span></div></td>
-                          <td className="px-6 py-6"><div className={`inline-flex items-center gap-2 px-3 py-1 ${gConfig.bg} ${gConfig.color} border border-current/20 font-black text-[10px] uppercase shadow-sm`}><GIcon className="size-3.5" />{gConfig.label}</div></td>
+                          <td className="px-6 py-6">
+                            <div className="flex items-center gap-3">
+                              <div className="size-8 bg-blue-500/5 flex items-center justify-center border border-blue-500/10">
+                                <Smartphone className="size-4 text-blue-500" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[11px] font-black uppercase text-foreground">
+                                  {gen.device?.deviceName || "SIN ASIGNAR"}
+                                </span>
+                                {gen.device?.personName && (
+                                  <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tight">
+                                    A Cargo: {gen.device.personName}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-6 min-w-[120px]">
+                             <div className={`inline-flex items-center gap-2 px-2.5 py-1 ${gConfig.bg} ${gConfig.color} border border-current/20 font-black text-[9px] uppercase shadow-sm`}>
+                               <GIcon className="size-3" />
+                               {gConfig.label}
+                             </div>
+                          </td>
                           <td className="px-6 py-6 text-right min-w-[220px]">
                             <div className="flex flex-col items-end gap-4">
                                <div className="flex flex-col items-end gap-1.5 opacity-40 group-hover/row:opacity-100 transition-opacity">
                                   <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-tighter"><CalendarDays className="size-3 text-blue-500" /> GENERADA: {format(new Date(gen.createdAt), "dd/MM HH:mm", { locale: es })}</div>
                                   <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-tighter"><Timer className="size-3 text-amber-500" /> ACTUALIZADA: {format(new Date(gen.updatedAt), "dd/MM HH:mm", { locale: es })}</div>
                                </div>
-                               <div className="flex items-center justify-end gap-2">
-                                  <button onClick={() => setEditingGen(gen)} className="h-9 px-3 flex items-center justify-center bg-muted/50 border border-border text-foreground hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all cursor-pointer gap-2 transition-all"><Edit className="size-3.5"/><span className="text-[9px] font-black uppercase">Editar</span></button>
-                                  <button onClick={() => handleDeleteGen(gen.id)} className="h-9 w-9 flex items-center justify-center border border-border text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all cursor-pointer"><Trash2 className="size-3.5"/></button>
-                               </div>
+                                <div className="flex items-center justify-end gap-1.5">
+                                   {(gen.status === "PENDIENTE" || gen.status === "PUBLICADO") ? (
+                                     <button onClick={async () => {
+                                       await updateGenMarketplace(gen.id, { status: "PAUSADO" });
+                                       setGenerations(prev => prev.map(g => g.id === gen.id ? { ...g, status: "PAUSADO" } : g));
+                                       toast.success("Variante pausada");
+                                     }} className="size-9 flex items-center justify-center bg-amber-500/10 border border-amber-500/20 text-amber-600 hover:bg-amber-500 hover:text-white transition-all cursor-pointer" title="Pausar Bot"><Pause className="size-4" /></button>
+                                   ) : gen.status === "PAUSADO" ? (
+                                     <button onClick={async () => {
+                                       await updateGenMarketplace(gen.id, { status: "PENDIENTE" });
+                                       setGenerations(prev => prev.map(g => g.id === gen.id ? { ...g, status: "PENDIENTE" } : g));
+                                       toast.success("Variante reanudada");
+                                     }} className="size-9 flex items-center justify-center bg-green-600/10 border border-green-600/20 text-green-600 hover:bg-green-600 hover:text-white transition-all cursor-pointer" title="Reanudar Bot"><Play className="size-4" /></button>
+                                   ) : null}
+                                    <button 
+                                      onClick={() => setEditingGen(gen)} 
+                                      disabled={gen.status !== "PAUSADO"}
+                                      className={`size-9 flex items-center justify-center border transition-all ${gen.status === "PAUSADO" ? 'bg-muted/50 border-border text-foreground hover:bg-blue-600 hover:text-white cursor-pointer' : 'bg-muted/10 border-border/10 text-muted-foreground/30 cursor-not-allowed'}`}
+                                      title={gen.status === "PAUSADO" ? "Editar Variante" : "Pausa el bot para editar"}
+                                    >
+                                      <Edit className="size-4"/>
+                                    </button>
+                                   <button onClick={() => handleDeleteGen(gen.id)} className="size-9 flex items-center justify-center border border-border text-red-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer" title="Eliminar"><Trash2 className="size-4"/></button>
+                                </div>
                             </div>
                           </td>
                         </tr>
