@@ -103,6 +103,7 @@ export default function OrdersClient() {
     setActiveOrderName(selectedOrder ? (selectedOrder.listingTitle || selectedOrder.orderName) : null)
   }, [selectedOrder, setActiveOrderName])
 
+  const [isConfirmingDispatch, setIsConfirmingDispatch] = useState<boolean>(false)
   const [isCreating, setIsCreating] = useState(false)
   const [creationStep, setCreationStep] = useState<"CHOICE" | "FORM">("CHOICE")
   const [activeImageIndex, setActiveImageIndex] = useState(0)
@@ -702,11 +703,17 @@ export default function OrdersClient() {
   }
 
   const handleSendToBots = async () => {
+    setIsConfirmingDispatch(true);
+  }
+
+  const executeDispatch = async () => {
+    if (!selectedOrder) return;
     try {
       setSaving(true)
       const updated = await sendOrderToBots(selectedOrder.id)
       setOrders(orders.map(o => o.id === selectedOrder.id ? updated : o))
       setSelectedOrder(updated)
+      setIsConfirmingDispatch(false)
       toast.success("🚀 Publicación preparada exitosamente")
     } catch (e: any) {
       console.error(e)
@@ -1955,6 +1962,91 @@ export default function OrdersClient() {
             </div>
         </div>
       )}
+
+      {/* CONFIRM DISPATCH MODAL */}
+      <AnimatePresence>
+        {isConfirmingDispatch && selectedOrder && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 md:p-6"
+            onClick={() => setIsConfirmingDispatch(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-card border border-white/10 w-full max-w-lg shadow-[0_0_100px_rgba(37,99,235,0.2)] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-8 space-y-8">
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="size-20 bg-blue-600/10 flex items-center justify-center border border-blue-500/20 relative">
+                     <Bot className="size-10 text-blue-500" />
+                     <div className="absolute -top-1 -right-1 size-4 bg-blue-600 animate-ping rounded-full opacity-20" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-black uppercase italic tracking-tighter text-foreground">Confirmar Envío</h3>
+                    <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest leading-relaxed">
+                      Una vez enviado a los bots, la publicación entrará en proceso automático y <span className="text-amber-500 font-bold">no podrá ser editada</span>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-muted/30 border border-border/50 p-4 space-y-4">
+                   <div className="flex items-center gap-4">
+                      <div className="size-16 bg-black/20 border border-border shrink-0 overflow-hidden">
+                        {selectedOrder.imageUrls?.[0] ? (
+                          <img src={selectedOrder.imageUrls[0]} alt="" className="size-full object-cover grayscale-[0.5]" />
+                        ) : (
+                          <div className="size-full flex items-center justify-center"><ShoppingBag className="size-6 text-muted-foreground/20" /></div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <h4 className="text-[11px] font-black uppercase text-foreground truncate">{selectedOrder.listingTitle || selectedOrder.orderName}</h4>
+                        <div className="flex items-center gap-3">
+                           <span className="text-[10px] font-black text-blue-500">
+                             {selectedOrder.listingCurrency === "DOLAR" ? "$" : "Bs"} {formatPrice(selectedOrder.listingPrice)}
+                           </span>
+                           <span className="text-[8px] font-bold text-muted-foreground/60 uppercase bg-muted px-2 py-0.5">{selectedOrder.listingCategory?.replace(/_/g, ' ')}</span>
+                        </div>
+                      </div>
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-4 pb-2">
+                      <div className="bg-background/40 p-3 flex flex-col gap-1 border-l-2 border-blue-600">
+                        <span className="text-[7px] font-black uppercase text-muted-foreground/60 tracking-widest">Bots Asignados</span>
+                        <span className="text-sm font-black text-foreground">{selectedOrder.quantity || 1} Unidades</span>
+                      </div>
+                      <div className="bg-background/40 p-3 flex flex-col gap-1 border-l-2 border-amber-600">
+                        <span className="text-[7px] font-black uppercase text-muted-foreground/60 tracking-widest">Red Social</span>
+                        <span className="text-sm font-black text-foreground uppercase">{selectedOrder.socialNetwork}</span>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <button 
+                    onClick={executeDispatch} 
+                    disabled={saving}
+                    className="h-14 w-full bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-600/30 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+                  >
+                    {saving ? <Loader2 className="size-5 animate-spin" /> : "🚀 Iniciar Distribución Automática"}
+                  </button>
+                  <button 
+                    onClick={() => setIsConfirmingDispatch(false)} 
+                    disabled={saving}
+                    className="h-12 w-full border border-border hover:bg-muted text-[10px] font-black uppercase tracking-[0.2em] transition-all cursor-pointer active:scale-[0.98]"
+                  >
+                    Seguir Editando
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

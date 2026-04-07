@@ -22,7 +22,11 @@ import {
   LayoutDashboard,
   Box,
   Car,
-  Home
+  Home,
+  Eye,
+  ShoppingCart,
+  DollarSign,
+  Tag
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -74,6 +78,7 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
   const [editingGen, setEditingGen] = useState<Generation | null>(null);
   const [saving, setSaving] = useState<number | null>(null);
   const [orderActionLoading, setOrderActionLoading] = useState<string | null>(null);
+  const [viewingSpecsOrder, setViewingSpecsOrder] = useState<any | null>(null);
   const { setActiveOrderName } = useProjectStore();
   const router = useRouter();
 
@@ -268,6 +273,15 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setViewingSpecsOrder({ ...order, quantity: gens.length })}
+                    className="h-10 px-5 bg-blue-600/10 border border-blue-500/30 text-blue-500 hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2 cursor-pointer group/eye"
+                    title="Ver Especificaciones Originales"
+                  >
+                    <Eye className="size-4 group-hover/eye:scale-110 transition-transform" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Ver Detalles</span>
+                  </button>
+
                   {(order.status === "LISTA" || order.status === "GENERANDO") ? (
                     <button onClick={() => handleChangeOrderStatus(order.id, "PAUSADA")} className="h-10 px-5 bg-amber-500 hover:bg-amber-400 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer"><Pause className="size-4 fill-current" /> Pausar</button>
                   ) : order.status === "PAUSADA" ? (
@@ -405,6 +419,168 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                  </div>
                  <div className="pt-6 flex gap-4"><button type="button" onClick={() => setEditingGen(null)} className="flex-1 h-14 border border-border text-[11px] font-black uppercase tracking-widest cursor-pointer hover:bg-muted/50 transition-all">Descartar</button><button type="submit" disabled={saving !== null} className="flex-[2] h-14 bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-3 cursor-pointer shadow-2xl shadow-blue-600/30 active:scale-95 hover:bg-blue-500 transition-all">{saving ? <div className="size-5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Guardar Configuración"}</button></div>
               </form>
+           </div>
+        </div>
+      )}
+      {/* SPECIFICATIONS VIEW DIALOG */}
+      {viewingSpecsOrder && (
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300" onClick={(e) => { if(e.target === e.currentTarget) setViewingSpecsOrder(null) }}>
+           <div className="w-full max-w-4xl max-h-[90vh] bg-card border border-white/5 shadow-[0_0_100px_rgba(37,99,235,0.15)] flex flex-col animate-in zoom-in-95 duration-500">
+              <div className="p-6 border-b border-white/5 flex items-center justify-between bg-muted/20 shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="size-12 bg-blue-600/10 border border-blue-500/20 flex items-center justify-center">
+                    <Eye className="size-6 text-blue-500" />
+                  </div>
+                  <div className="flex flex-col">
+                    <h3 className="text-sm font-black uppercase italic tracking-[0.2em] text-foreground">Especificaciones Originales</h3>
+                    <p className="text-[10px] text-muted-foreground uppercase font-black opacity-60">Control Maestro de la Publicación</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setViewingSpecsOrder(null)} 
+                  className="size-12 flex items-center justify-center border border-white/5 hover:bg-red-500 hover:text-white transition-all cursor-pointer active:scale-95"
+                >
+                  <X className="size-6"/>
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-12">
+                 {/* GRID DE DATOS PRINCIPALES */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="space-y-8">
+                       <div className="flex flex-col gap-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-blue-500 opacity-60">Título de la Publicación</label>
+                          <p className="text-xl font-black uppercase italic tracking-tight text-foreground leading-[1.1]">{viewingSpecsOrder.listingTitle || viewingSpecsOrder.orderName}</p>
+                       </div>
+                       
+                       <div className="flex flex-col gap-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-blue-500 opacity-60">Descripción Base</label>
+                          <p className="text-[11px] font-medium text-muted-foreground leading-relaxed whitespace-pre-wrap">{viewingSpecsOrder.listingDescription || "Sin descripción proporcionada."}</p>
+                       </div>
+                    </div>
+
+                    <div className="space-y-6">
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-muted/10 border border-white/5 p-5 space-y-1">
+                             <div className="flex items-center gap-2 text-blue-500 mb-1">
+                                <DollarSign className="size-3" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Precio</span>
+                             </div>
+                             <p className="text-2xl font-black tabular-nums tracking-tighter text-foreground">
+                                {viewingSpecsOrder.listingCurrency === "DOLAR" ? "$" : "Bs"} {viewingSpecsOrder.listingPrice?.$numberDecimal || viewingSpecsOrder.listingPrice || "0"}
+                             </p>
+                          </div>
+                          <div className="bg-muted/10 border border-white/5 p-5 space-y-1">
+                             <div className="flex items-center gap-2 text-blue-500 mb-1">
+                                <Tag className="size-3" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Categoría</span>
+                             </div>
+                             <p className="text-sm font-black uppercase tracking-tight text-foreground">
+                                {viewingSpecsOrder.listingCategory?.replace(/_/g, ' ')}
+                             </p>
+                          </div>
+                       </div>
+
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-muted/10 border border-white/5 p-5 space-y-1">
+                             <div className="flex items-center gap-2 text-blue-500 mb-1">
+                                <Smartphone className="size-3" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Tipo</span>
+                             </div>
+                             <p className="text-sm font-black uppercase tracking-tight text-foreground">
+                                {viewingSpecsOrder.listingType}
+                             </p>
+                          </div>
+                          <div className="bg-muted/10 border border-white/5 p-5 space-y-1">
+                             <div className="flex items-center gap-2 text-blue-500 mb-1">
+                                <CheckCircle2 className="size-3" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Condición</span>
+                             </div>
+                             <p className="text-sm font-black uppercase tracking-tight text-foreground">
+                                {viewingSpecsOrder.listingCondition?.replace(/_/g, ' ')}
+                             </p>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 {/* DETALLES ESPECÍFICOS SEGÚN TIPO */}
+                 {(viewingSpecsOrder.listingType === "VEHICULO" || viewingSpecsOrder.listingType === "PROPIEDAD") && (
+                   <div className="border-t border-white/5 pt-10">
+                      <div className="flex items-center gap-3 mb-6">
+                         <Database className="size-4 text-blue-500" />
+                         <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-foreground">Información Técnica</h4>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                         {viewingSpecsOrder.listingType === "VEHICULO" && (
+                           <>
+                             <div className="p-4 bg-muted/5 border border-white/5">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground/60 mb-1">Año</p>
+                                <p className="text-xs font-black">{viewingSpecsOrder.vehicleYear || "-"}</p>
+                             </div>
+                             <div className="p-4 bg-muted/5 border border-white/5">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground/60 mb-1">Marca</p>
+                                <p className="text-xs font-black truncate">{viewingSpecsOrder.vehicleMake || "-"}</p>
+                             </div>
+                             <div className="p-4 bg-muted/5 border border-white/5">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground/60 mb-1">Modelo</p>
+                                <p className="text-xs font-black truncate">{viewingSpecsOrder.vehicleModel || "-"}</p>
+                             </div>
+                             <div className="p-4 bg-muted/5 border border-white/5">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground/60 mb-1">Recorrido</p>
+                                <p className="text-xs font-black">{viewingSpecsOrder.vehicleMileage || 0} km</p>
+                             </div>
+                           </>
+                         )}
+
+                         {viewingSpecsOrder.listingType === "PROPIEDAD" && (
+                           <>
+                             <div className="p-4 bg-muted/5 border border-white/5">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground/60 mb-1">Habitaciones</p>
+                                <p className="text-xs font-black">{viewingSpecsOrder.propRooms || "-"}</p>
+                             </div>
+                             <div className="p-4 bg-muted/5 border border-white/5">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground/60 mb-1">Baños</p>
+                                <p className="text-xs font-black">{viewingSpecsOrder.propBathrooms || "-"}</p>
+                             </div>
+                             <div className="p-4 bg-muted/5 border border-white/5">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground/60 mb-1">Área Total</p>
+                                <p className="text-xs font-black">{viewingSpecsOrder.propArea || 0} m²</p>
+                             </div>
+                           </>
+                         )}
+                      </div>
+                   </div>
+                 )}
+
+                 {/* GALERÍA DE IMÁGENES ORIGINALES */}
+                 {viewingSpecsOrder.imageUrls?.length > 0 && (
+                   <div className="border-t border-white/5 pt-10">
+                      <div className="flex items-center gap-3 mb-6">
+                         <ImagePlus className="size-4 text-blue-500" />
+                         <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-foreground">Multimedia Base ({viewingSpecsOrder.imageUrls.length})</h4>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                         {viewingSpecsOrder.imageUrls.map((url: string, idx: number) => (
+                           <div key={idx} className="relative aspect-square border border-white/5 bg-black/20 overflow-hidden group">
+                              <img src={url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                              <div className="absolute inset-0 bg-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                           </div>
+                         ))}
+                      </div>
+                   </div>
+                 )}
+              </div>
+
+              <div className="p-8 border-t border-white/5 bg-muted/10 shrink-0">
+                 <button 
+                  onClick={() => setViewingSpecsOrder(null)}
+                  className="w-full h-14 bg-foreground text-background text-[11px] font-black uppercase tracking-[0.3em] hover:bg-blue-600 hover:text-white transition-all active:scale-[0.98] cursor-pointer"
+                 >
+                   Entendido
+                 </button>
+              </div>
            </div>
         </div>
       )}

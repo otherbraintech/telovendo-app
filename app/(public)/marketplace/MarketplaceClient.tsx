@@ -108,11 +108,19 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
 
       {/* DETAIL DIALOG */}
       <Dialog open={!!selectedPub} onOpenChange={(open) => !open && setSelectedPub(null)}>
-        <DialogContent className="sm:max-w-none w-[95vw] md:max-w-5xl lg:max-w-6xl p-0 bg-card border-border rounded-none gap-0 overflow-y-auto md:overflow-hidden md:max-h-[90vh]">
+        <DialogContent className="sm:max-w-none w-[95vw] md:max-w-5xl lg:max-w-6xl p-0 bg-card border-border rounded-none gap-0 overflow-y-auto custom-scrollbar md:overflow-hidden max-h-[90vh] md:h-auto border-none shadow-[0_0_100px_rgba(0,0,0,0.5)]">
           <DialogHeader className="sr-only">
              <DialogTitle>{selectedPub?.listingTitle}</DialogTitle>
              <DialogDescription>{selectedPub?.listingDescription}</DialogDescription>
           </DialogHeader>
+          
+          {/* Custom Close Button for better visibility */}
+          <button 
+            onClick={() => setSelectedPub(null)}
+            className="absolute top-4 right-4 z-[100] size-10 bg-black/60 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-red-500 transition-all cursor-pointer group"
+          >
+            <X className="size-6 transition-transform group-active:scale-90" />
+          </button>
           {selectedPub && (
             <div className="flex flex-col md:flex-row w-full h-full min-h-[500px]">
               {/* IMAGE SECTION */}
@@ -162,7 +170,7 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
               </div>
 
               {/* INFO SECTION */}
-              <div className="flex-1 p-8 md:p-12 space-y-8 overflow-y-auto custom-scrollbar">
+              <div className="flex-1 p-6 md:p-12 space-y-8 md:overflow-y-auto custom-scrollbar md:max-h-[90vh]">
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <Badge className="bg-blue-600 text-white border-0 text-[10px] font-black tracking-widest uppercase rounded-none py-1.5 px-3">
