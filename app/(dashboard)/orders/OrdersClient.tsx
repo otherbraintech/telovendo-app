@@ -5,6 +5,7 @@ import { Search, Filter, ShoppingBag, Loader2, ImagePlus, X, MoreVertical, Copy,
 import { useEffect, useState, useMemo, memo } from "react"
 import Link from "next/link"
 import { getOrdersByProject, updateBotOrder, sendOrderToBots, createBotOrder, cancelBotOrder, deleteBotOrder } from "@/lib/actions/orders"
+import { getProjects } from "@/lib/actions/projects"
 import { improveTitle, improveDescription, generateProductImage, improveProductImage, analyzeVehicleImage, type ImproveType } from "@/lib/actions/ai"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -65,6 +66,7 @@ export default function OrdersClient() {
   const { selectedProjectId, setActiveOrderName } = useProjectStore()
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [hasAnyProjects, setHasAnyProjects] = useState<boolean | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
   
   // Sync selected order to breadcrumbs
@@ -131,6 +133,13 @@ export default function OrdersClient() {
       setHasDraft(false);
     }
   };
+
+  // Fetch all projects to check for existence/stale state
+  useEffect(() => {
+    getProjects().then(projs => {
+      setHasAnyProjects(projs && projs.length > 0);
+    });
+  }, [selectedProjectId]);
 
   const filteredOrders = useMemo(() => 
     filter === "TODAS" ? orders : orders.filter(o => o.status === filter),
@@ -345,6 +354,7 @@ export default function OrdersClient() {
         propBathrooms: Number(editForm.propBathrooms) || undefined,
         propArea: Number(editForm.propArea) || undefined,
         quantity: Number(editForm.quantity) || 1,
+        listingCurrency: editForm.listingCurrency,
         imageUrls: [...(editForm.imageUrls || []), ...(newImageUrls || [])]
       })
       
@@ -361,7 +371,11 @@ export default function OrdersClient() {
   }
 
   const handleCreate = async () => {
-    if (!editForm.listingTitle) return alert("El título es obligatorio");
+    if (!selectedProjectId) {
+      toast.error("Debes seleccionar un proyecto primero");
+      return;
+    }
+    if (!editForm.listingTitle) return toast.error("El título es obligatorio");
     try {
       setSaving(true)
       let newImageUrls: string[] = [];
@@ -404,6 +418,7 @@ export default function OrdersClient() {
         listingDescription: editForm.listingDescription || "",
         listingAvailability: "DISPONIBLE",
         listingType: editForm.listingType || "ARTICULO",
+        listingCurrency: editForm.listingCurrency || "BOLIVIANO",
         vehicleYear: Number(editForm.vehicleYear) || undefined,
         vehicleMake: editForm.vehicleMake,
         vehicleModel: editForm.vehicleModel,
@@ -420,8 +435,10 @@ export default function OrdersClient() {
       setEditForm({})
       setEditSelectedFiles([])
       clearDraft()
-    } catch (e) {
+      toast.success("Publicación creada correctamente");
+    } catch (e: any) {
       console.error(e)
+      toast.error(e.message || "Error al crear la publicación");
     } finally {
       setSaving(false)
     }
@@ -487,23 +504,28 @@ export default function OrdersClient() {
         projectId: order.projectId,
         orderName: order.orderName + " (Copia)",
         listingTitle: order.listingTitle,
-        listingPrice: Number(order.listingPrice) || 0,
+        listingPrice: Number(order.listingPrice?.$numberDecimal || order.listingPrice) || 0,
         listingCategory: order.listingCategory,
         listingCondition: order.listingCondition,
         listingDescription: order.listingDescription,
         listingAvailability: order.listingAvailability || "DISPONIBLE",
+        listingType: order.listingType || "ARTICULO",
+        listingCurrency: order.listingCurrency || "BOLIVIANO",
+        vehicleYear: order.vehicleYear,
+        vehicleMake: order.vehicleMake,
+        vehicleModel: order.vehicleModel,
+        vehicleMileage: order.vehicleMileage,
+        propRooms: order.propRooms,
+        propBathrooms: order.propBathrooms,
+        propArea: order.propArea,
         quantity: order.quantity || 1,
         imageUrls: order.imageUrls || []
       })
       setOrders([duplicated, ...orders])
       setSelectedOrder(duplicated)
       setEditForm({
-        listingTitle: duplicated.listingTitle || duplicated.orderName,
-        listingPrice: duplicated.listingPrice,
-        listingCondition: duplicated.listingCondition,
-        listingCategory: duplicated.listingCategory,
-        listingDescription: duplicated.listingDescription,
-        imageUrls: duplicated.imageUrls || []
+        ...duplicated,
+        listingPrice: Number(duplicated.listingPrice?.$numberDecimal || duplicated.listingPrice) || 0
       })
       setIsEditing(true)
     } catch (err) {
@@ -571,17 +593,36 @@ export default function OrdersClient() {
     setTouchStart(null);
   }
 
-  useEffect(() => {
-    if (selectedProjectId) {
-      setLoading(true)
-      getOrdersByProject(selectedProjectId).then(data => {
-        setOrders(data)
-        setLoading(false)
-      })
-    } else {
-      setOrders([])
+  const refreshOrders = async (showLoading = false) => {
+    if (!selectedProjectId) return;
+    if (showLoading) setLoading(true);
+    try {
+      const data = await getOrdersByProject(selectedProjectId);
+      setOrders(data);
+    } catch (error) {
+      console.error("Error refreshing orders:", error);
+    } finally {
+      if (showLoading) setLoading(false);
     }
-  }, [selectedProjectId])
+  };
+
+  useEffect(() => {
+    refreshOrders(true);
+
+    const interval = setInterval(() => {
+      refreshOrders(false);
+    }, 20000);
+
+    return () => clearInterval(interval);
+  }, [selectedProjectId]);
+
+  const formatPrice = (price: any) => {
+    const num = parseFloat(price?.$numberDecimal || price || "0");
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(num);
+  };
 
   const statusLabel: Record<string, string> = {
     LISTA: "LISTA PARA BOT",
@@ -609,7 +650,7 @@ export default function OrdersClient() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-foreground">
-            Mis <span className="text-blue-500">Publicaciones</span>
+            Mis <span className="text-blue-500">publicaciones</span>
           </h1>
           <p className="text-xs text-muted-foreground">
             {selectedProjectId ? "Aquí puedes ver el estado de todas tus publicaciones." : "Selecciona un proyecto para ver sus publicaciones."}
@@ -653,8 +694,21 @@ export default function OrdersClient() {
           <ShoppingBag className="size-12 text-muted-foreground/10" />
           <div className="max-w-xs">
             <p className="text-sm font-black uppercase tracking-widest text-muted-foreground">Proyecto no seleccionado</p>
-            <p className="text-[10px] text-muted-foreground/60 mt-2 uppercase tracking-wider leading-relaxed">Utiliza el menú lateral para gestionar tus publicaciones.</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-2 uppercase tracking-wider leading-relaxed">
+              {hasAnyProjects === false 
+                ? "No tienes ningún proyecto creado. Crea tu primer proyecto para empezar." 
+                : "Utiliza el menú lateral para seleccionar un proyecto y gestionar tus publicaciones."}
+            </p>
           </div>
+          {hasAnyProjects === false && (
+            <Link 
+              href="/projects"
+              className="mt-2 h-11 px-8 bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2"
+            >
+              <Box className="size-4" />
+              Crear Proyecto
+            </Link>
+          )}
         </div>
       ) : loading ? (
         <div className="h-96 flex flex-col items-center justify-center gap-4">
@@ -693,7 +747,7 @@ export default function OrdersClient() {
            )}
 
           {filteredOrders.map((order) => (
-            <div key={order.id} onClick={() => { setSelectedOrder(order); setActiveImageIndex(0); }} className="group relative bg-card border border-border flex flex-col overflow-hidden hover:border-blue-500/50 transition-all duration-500 shadow-sm cursor-pointer">
+            <div key={order.id} onClick={() => { setSelectedOrder(order); setActiveImageIndex(0); }} className="group relative bg-card border border-border flex flex-col overflow-hidden hover:border-blue-500 transition-all duration-500 shadow-sm hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.3)] cursor-pointer">
               <div className="relative aspect-square bg-muted/20 border-b border-border overflow-hidden">
                 {order.imageUrls && order.imageUrls.length > 0 ? (
                   <OrderCardImage url={order.imageUrls[0]} alt={order.orderName} className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-110" />
@@ -703,7 +757,9 @@ export default function OrdersClient() {
                 <div className="absolute top-3 left-3 z-10"><span className={`px-2 py-1 text-[8px] font-black uppercase tracking-wider rounded-none shadow-xl backdrop-blur-md border ${order.status === 'CANCELADA' ? 'bg-red-500/80 border-red-500/20 text-white' : order.status === 'LISTA' ? 'bg-amber-500/80 border-amber-500/20 text-white' : order.status === 'GENERANDO' ? 'bg-blue-600 border-blue-500/20 text-white animate-pulse' : 'bg-green-600 border-green-500/20 text-white'}`}>{statusLabel[order.status] ?? order.status}</span></div>
               </div>
               <div className="p-4 flex flex-col flex-1 gap-2 bg-gradient-to-b from-card to-muted/10">
-                <div className="text-xl font-black text-blue-500 tabular-nums tracking-tighter">Bs {order.listingPrice}</div>
+                <div className="text-xl font-black text-blue-500 tabular-nums tracking-tighter">
+                  {order.listingCurrency === "DOLAR" ? "$" : "Bs"} {formatPrice(order.listingPrice)}
+                </div>
                 <h3 className="text-sm font-bold text-foreground line-clamp-1 leading-none uppercase tracking-tight">{order.listingTitle || order.orderName}</h3>
                 <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed opacity-70">{order.listingDescription || "Publicación sin descripción detallada."}</p>
                 <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/50">
@@ -737,8 +793,8 @@ export default function OrdersClient() {
 
       {/* CREATION MODAL */}
       {isCreating && (
-        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-2xl p-0 md:p-8 flex items-center justify-center overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) setIsCreating(false) }}>
-          <div className="relative w-full max-w-5xl h-full md:h-auto bg-card border border-white/5 shadow-[0_0_80px_rgba(37,99,235,0.1)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden flex flex-col md:flex-row max-h-[100vh] md:max-h-[90vh]">
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-2xl p-0 md:p-8 flex items-start md:items-center justify-center overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) setIsCreating(false) }}>
+          <div className="relative w-full max-w-5xl h-auto bg-card border border-white/5 shadow-[0_0_80px_rgba(37,99,235,0.1)] animate-in fade-in zoom-in-95 duration-500 flex flex-col md:flex-row md:max-h-[90vh] md:overflow-hidden">
              <button onClick={() => setIsCreating(false)} className="absolute top-4 right-4 size-10 bg-white/5 flex items-center justify-center hover:bg-red-500 text-white transition-all z-[70] border border-white/10 group active:scale-90 cursor-pointer"><X className="size-5 group-hover:rotate-90 transition-transform duration-300" /></button>
              
              {creationStep === "CHOICE" ? (
@@ -765,8 +821,8 @@ export default function OrdersClient() {
                   </div>
                </div>
              ) : (
-               <div className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
-                 <div className="w-full md:w-[45%] bg-muted/20 flex flex-col border-b md:border-b-0 md:border-r border-border p-4 md:p-6 shrink-0 overflow-y-auto custom-scrollbar">
+               <div className="flex-1 flex flex-col md:flex-row md:overflow-hidden">
+                 <div className="w-full md:w-[45%] bg-muted/20 flex flex-col border-b md:border-b-0 md:border-r border-border p-4 md:p-6 shrink-0 md:overflow-y-auto custom-scrollbar">
                     <div className="relative aspect-square w-full bg-black/20 flex items-center justify-center overflow-hidden border border-border shadow-inner group/preview">
                       {editingMixedImages.length > 0 ? (
                         <FilePreview file={editingMixedImages[activeImageIndex] || editingMixedImages[0]} className="w-full h-full object-contain" />
@@ -814,7 +870,7 @@ export default function OrdersClient() {
                     )}
                     <button onClick={() => setCreationStep("CHOICE")} className="mt-4 flex items-center gap-2 text-[9px] font-black uppercase text-muted-foreground hover:text-foreground transition-colors cursor-pointer"><ChevronLeft className="size-3" /> Volver a tipo</button>
                  </div>
-                 <div className="flex-1 bg-card p-6 md:p-10 space-y-6 overflow-y-auto custom-scrollbar">
+                 <div className="flex-1 bg-card p-6 md:p-10 space-y-6 md:overflow-y-auto custom-scrollbar">
                    <div className="mb-4 flex items-center gap-3">
                      <div className="h-6 w-1.5 bg-blue-500" />
                      <h3 className="text-lg font-black uppercase tracking-widest text-foreground">
@@ -832,8 +888,20 @@ export default function OrdersClient() {
                         <Input className="h-12 bg-muted/20 border-border text-xs font-bold focus:ring-2 focus:ring-blue-500" name="listingTitle" value={editForm.listingTitle || ""} onChange={handleEditChange} placeholder={editForm.listingType === "VEHICULO" ? "Ej: Toyota Hilux 2023 Full Equipo" : editForm.listingType === "PROPIEDAD" ? "Ej: Departamento en Miraflores 3 Dorm" : "Escribe el nombre del producto..."} />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Precio Bs</Label><Input type="number" className="h-12 bg-muted/20 border-border text-base font-black text-blue-500" name="listingPrice" value={editForm.listingPrice || ""} onChange={handleEditChange} /></div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="space-y-1.5 flex flex-col">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Precio</Label>
+                          <div className="flex gap-2">
+                             <Select value={editForm.listingCurrency || "BOLIVIANO"} onValueChange={v => setEditForm({...editForm, listingCurrency: v})}>
+                               <SelectTrigger className="w-20 h-12 bg-muted/20 border-border text-xs font-black"><SelectValue /></SelectTrigger>
+                               <SelectContent className="z-[100]">
+                                 <SelectItem value="BOLIVIANO">Bs</SelectItem>
+                                 <SelectItem value="DOLAR">$</SelectItem>
+                               </SelectContent>
+                             </Select>
+                             <Input type="number" className="h-12 flex-1 bg-muted/20 border-border text-base font-black text-blue-500" name="listingPrice" value={editForm.listingPrice || ""} onChange={handleEditChange} />
+                          </div>
+                        </div>
                         <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Bots Asignados</Label><Input type="number" className="h-12 bg-muted/20 border-border text-base font-black" name="quantity" value={editForm.quantity} onChange={handleEditChange} min={1} /></div>
                       </div>
 
@@ -913,7 +981,7 @@ export default function OrdersClient() {
             <button onClick={(e) => { e.stopPropagation(); handleNavigate('prev'); }} className="size-16 bg-white/5 hover:bg-blue-600 text-white rounded-full flex items-center justify-center backdrop-blur-md border border-white/10 transition-all pointer-events-auto hover:scale-110 active:scale-95 cursor-pointer"><ChevronLeft className="size-8" /></button>
             <button onClick={(e) => { e.stopPropagation(); handleNavigate('next'); }} className="size-16 bg-white/5 hover:bg-blue-600 text-white rounded-full flex items-center justify-center backdrop-blur-md border border-white/10 transition-all pointer-events-auto hover:scale-110 active:scale-95 cursor-pointer"><ChevronRight className="size-8" /></button>
           </div>
-          <div className="relative w-full max-w-5xl h-full md:h-auto bg-card border border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in-95 duration-500 flex flex-col md:flex-row max-h-[100vh] md:max-h-[90vh] overflow-hidden">
+          <div className="relative w-full max-w-5xl h-auto bg-card border border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in-95 duration-500 flex flex-col md:flex-row md:max-h-[90vh] md:overflow-hidden">
              {/* CLOSE BUTTON (DESKTOP) */}
              <button 
                onClick={() => { setSelectedOrder(null); setIsEditing(false); }} 
@@ -929,8 +997,8 @@ export default function OrdersClient() {
              >
                <X className="size-5" />
              </button>
-             <div className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
-               <div className="w-full md:w-[48%] bg-muted/20 flex flex-col border-b md:border-b-0 md:border-r border-border p-4 md:p-6 shrink-0 overflow-y-auto custom-scrollbar">
+             <div className="flex-1 flex flex-col md:flex-row md:overflow-hidden">
+               <div className="w-full md:w-[48%] bg-muted/20 flex flex-col border-b md:border-b-0 md:border-r border-border p-4 md:p-6 shrink-0 md:overflow-y-auto custom-scrollbar">
                   <div className="relative aspect-square w-full bg-black/20 flex items-center justify-center overflow-hidden border border-border shadow-inner">
                     {editingMixedImages.length > 0 ? (<FilePreview file={editingMixedImages[activeImageIndex] || editingMixedImages[0]} className="w-full h-full object-contain" />) : (<div className="text-center p-8"><ShoppingBag className="size-20 mx-auto text-muted-foreground/10" /><p className="text-[10px] font-black uppercase text-muted-foreground/30 mt-4 tracking-widest">Multimedia</p></div>)}
                   </div>
@@ -972,12 +1040,12 @@ export default function OrdersClient() {
                     </div>
                   )}
                </div>
-               <div className="flex-1 bg-card p-6 md:p-10 space-y-6 overflow-y-auto custom-scrollbar">
+               <div className="flex-1 bg-card p-6 md:p-10 space-y-6 md:overflow-y-auto custom-scrollbar">
                  {!isEditing ? (
-                   <div className="flex flex-col h-full overflow-hidden">
+                   <div className="flex flex-col md:h-full md:overflow-hidden">
                       <div className="mb-8 pb-6 flex flex-wrap gap-3 border-b border-border shrink-0">
                          <button onClick={() => { setSelectedOrder(null); setIsEditing(false); }} className="flex-1 h-12 border border-border text-[10px] font-black uppercase tracking-[0.2em] hover:bg-muted transition-all cursor-pointer md:hidden">Cerrar</button>
-                         <button onClick={() => { setEditForm({...selectedOrder}); setIsEditing(true); }} className="flex-1 h-12 border border-blue-500/30 text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 hover:bg-blue-500/5 transition-all cursor-pointer md:h-11 md:px-8 md:flex-none">Editar</button>
+                         <button onClick={() => { setEditForm({...selectedOrder, listingPrice: Number(selectedOrder.listingPrice?.$numberDecimal || selectedOrder.listingPrice) || 0}); setIsEditing(true); }} className="flex-1 h-12 border border-blue-500/30 text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 hover:bg-blue-500/5 transition-all cursor-pointer md:h-11 md:px-8 md:flex-none">Editar</button>
                          {selectedOrder.status === "LISTA" ? (
                            <button onClick={handleSendToBots} disabled={saving} className="flex-[2] h-12 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-blue-500/20 active:scale-95 cursor-pointer md:h-11 md:flex-none md:px-10">{saving ? <Loader2 className="size-4 animate-spin"/> : "🚀 Enviar"}</button>
                          ) : (
@@ -991,16 +1059,56 @@ export default function OrdersClient() {
                          </div>
                       </div>
 
-                      <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                      <div className="flex-1 md:overflow-y-auto custom-scrollbar pr-2">
                         <div className="mb-6">
                           <div className="flex items-center gap-4 mb-2">
-                            <span className="text-3xl md:text-4xl font-black tracking-tighter text-blue-500 tabular-nums">Bs {selectedOrder.listingPrice}</span>
+                            <span className="text-3xl md:text-4xl font-black tracking-tighter text-blue-500 tabular-nums">
+                              {selectedOrder.listingCurrency === "DOLAR" ? "$" : "Bs"} {formatPrice(selectedOrder.listingPrice)}
+                            </span>
                             <span className="h-[2px] flex-1 bg-blue-500/10" />
                             <div className="flex items-center gap-2">
                               <span className="px-2 py-1 text-[8px] font-black uppercase tracking-wider rounded-none bg-blue-500/10 text-blue-500 border border-blue-500/20">{({ VEHICULO: "Vehículo", PROPIEDAD: "Propiedad", ARTICULO: "Artículo" } as any)[selectedOrder.listingType] || "Artículo"}</span>
                               <span className={`px-2 py-1 text-[8px] font-black uppercase tracking-wider rounded-none ${selectedOrder.status === 'GENERANDO' ? 'bg-blue-600 text-white' : 'bg-green-600/20 text-green-500 border border-green-500/20'}`}>{statusLabel[selectedOrder.status]}</span>
                             </div>
                           </div>
+
+                          {selectedOrder.listingType === "VEHICULO" && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 border border-border/50 rounded-none mb-6">
+                               <div className="space-y-1">
+                                  <h4 className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-widest">Año</h4>
+                                  <p className="text-xs font-black uppercase">{selectedOrder.vehicleYear || "N/A"}</p>
+                               </div>
+                               <div className="space-y-1">
+                                  <h4 className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-widest">Marca</h4>
+                                  <p className="text-xs font-black uppercase">{selectedOrder.vehicleMake || "N/A"}</p>
+                               </div>
+                               <div className="space-y-1">
+                                  <h4 className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-widest">Modelo</h4>
+                                  <p className="text-xs font-black uppercase">{selectedOrder.vehicleModel || "N/A"}</p>
+                               </div>
+                               <div className="space-y-1">
+                                  <h4 className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-widest">Kilometraje</h4>
+                                  <p className="text-xs font-black uppercase">{selectedOrder.vehicleMileage ? `${selectedOrder.vehicleMileage} km` : "N/A"}</p>
+                               </div>
+                            </div>
+                          )}
+
+                          {selectedOrder.listingType === "PROPIEDAD" && (
+                            <div className="grid grid-cols-3 gap-4 p-4 bg-muted/30 border border-border/50 rounded-none mb-6">
+                               <div className="space-y-1">
+                                  <h4 className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-widest">Hab.</h4>
+                                  <p className="text-xs font-black uppercase">{selectedOrder.propRooms || "N/A"}</p>
+                               </div>
+                               <div className="space-y-1">
+                                  <h4 className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-widest">Baños</h4>
+                                  <p className="text-xs font-black uppercase">{selectedOrder.propBathrooms || "N/A"}</p>
+                               </div>
+                               <div className="space-y-1">
+                                  <h4 className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-widest">Superficie</h4>
+                                  <p className="text-xs font-black uppercase">{selectedOrder.propArea ? `${selectedOrder.propArea} m²` : "N/A"}</p>
+                               </div>
+                            </div>
+                          )}
                           <h2 className="text-xl md:text-2xl font-bold leading-tight uppercase tracking-tight">{selectedOrder.listingTitle || selectedOrder.orderName}</h2>
                           <div className="mt-2 flex items-center gap-1.5">
                              <div className="size-5 bg-blue-500/10 flex items-center justify-center rounded">
@@ -1014,16 +1122,16 @@ export default function OrdersClient() {
                         <div className="space-y-6">
                           <div className="space-y-1.5"><h4 className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-[0.3em]">Descripción</h4><p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap font-medium">{selectedOrder.listingDescription || "Sin descripción."}</p></div>
                           <div className="grid grid-cols-2 gap-6 pt-6 border-t border-border/50">
-                             <div className="space-y-1.5"><h4 className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-[0.3em]">Categoría</h4><p className="text-xs font-bold uppercase text-blue-500">{selectedOrder.listingCategory}</p></div>
+                             <div className="space-y-1.5"><h4 className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-[0.3em]">Categoría</h4><p className="text-xs font-bold uppercase text-blue-500">{selectedOrder.listingCategory?.replace(/_/g, ' ')}</p></div>
                              <div className="space-y-1.5"><h4 className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-[0.3em]">Condición</h4><p className="text-xs font-bold uppercase">{selectedOrder.listingCondition?.replace(/_/g, ' ')}</p></div>
                           </div>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col h-full overflow-hidden">
+                    <div className="flex flex-col md:h-full md:overflow-hidden">
                       <div className="mb-4 flex items-center gap-3 shrink-0"><div className="h-6 w-1.5 bg-blue-500" /><h3 className="text-lg font-black uppercase tracking-widest text-foreground">Editar {({ VEHICULO: "Vehículo", PROPIEDAD: "Propiedad", ARTICULO: "Artículo" } as any)[selectedOrder.listingType] || "Artículo"}</h3></div>
-                      <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                      <div className="flex-1 md:overflow-y-auto custom-scrollbar pr-2">
                         <div className="space-y-5">
                           <div className="space-y-1.5">
                              <div className="flex items-center justify-between">

@@ -10,9 +10,10 @@ model User {
   id              String           @id @default(cuid())
   username        String           @unique
   usernameLower   String           @unique
+  email           String?          @unique
   passwordHash    String
   name            String
-  role            Role             @default(USUARIO)
+  role            Role             @default(ESPECTADOR)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   botOrders       BotOrder[]
@@ -21,52 +22,53 @@ model User {
 }
 
 model Project {
-  id                String           @id @default(cuid())
-  name              String
-  nameLower         String
-  userId            String
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  deletedAt         DateTime?
-  botOrders         BotOrder[]
-  user              User             @relation(fields: [userId], references: [id])
+  id        String     @id @default(cuid())
+  name      String
+  nameLower String
+  userId    String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  deletedAt DateTime?
+  botOrders BotOrder[]
+  user      User       @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
 }
 
 model BotOrder {
-  id              String                @id @default(cuid())
-  projectId       String
-  userId          String
-  type            OrderType             @default(MARKETPLACE)
-  orderName       String                @default("Publicación Marketplace")
-  socialNetwork   SocialNetwork         @default(FACEBOOK)
-  quantity        Int                   @default(1)
-  status          OrderStatus           @default(LISTA)
+  id                  String              @id @default(cuid())
+  projectId           String
+  userId              String
+  type                OrderType           @default(MARKETPLACE)
+  orderName           String              @default("Publicación Marketplace")
+  socialNetwork       SocialNetwork       @default(FACEBOOK)
+  quantity            Int                 @default(1)
+  status              OrderStatus         @default(LISTA)
   // Campos específicos de Facebook Marketplace
-  listingTitle    String?
-  listingPrice    Decimal?              @db.Decimal(10, 2)
-  listingCategory MarketplaceCategory   @default(VARIOS)
-  listingCondition ItemCondition        @default(NUEVO)
-  listingDescription String?
-  listingAvailability ItemAvailability  @default(DISPONIBLE)
-  listingType     MarketplaceType   @default(ARTICULO)
+  listingTitle        String?
+  listingPrice        Decimal?            @db.Decimal(10, 2)
+  listingCategory     MarketplaceCategory @default(VARIOS)
+  listingCondition    ItemCondition       @default(NUEVO)
+  listingDescription  String?
+  listingAvailability ItemAvailability    @default(DISPONIBLE)
+  listingType         MarketplaceType     @default(ARTICULO)
+  listingCurrency     Currency            @default(BOLIVIANO)
   // Campos específicos para Vehículos
-  vehicleYear     Int?
-  vehicleMake     String?
-  vehicleModel    String?
-  vehicleMileage  Int?
+  vehicleYear         Int?
+  vehicleMake         String?
+  vehicleModel        String?
+  vehicleMileage      Int?
   // Campos específicos para Propiedades
-  propRooms       Int?
-  propBathrooms   Int?
-  propArea        Int?
+  propRooms           Int?
+  propBathrooms       Int?
+  propArea            Int?
   // Imágenes (almacenadas como URLs o paths)
-  imageUrls       String[]              @default([])
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  project         Project               @relation(fields: [projectId], references: [id])
-  user            User                  @relation(fields: [userId], references: [id])
-  genMarketplaces GenMarketplace[]
+  imageUrls           String[]            @default([])
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  project             Project             @relation(fields: [projectId], references: [id])
+  user                User                @relation(fields: [userId], references: [id])
+  genMarketplaces     GenMarketplace[]
 
   @@index([projectId, createdAt])
   @@index([userId, createdAt])
@@ -93,9 +95,11 @@ model GenMarketplace {
 
 model Device {
   id              String           @id @default(cuid())
-  deviceName      String           @unique
+  serial          String           @unique
+  model           String?
   personName      String?
   label           String?
+  triggerId       String?
   status          DeviceStatus     @default(LIBRE)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -107,6 +111,7 @@ model Device {
 enum Role {
   ADMIN
   USUARIO
+  ESPECTADOR
 }
 
 enum OrderType {
@@ -212,4 +217,9 @@ enum DeviceStatus {
   OCUPADO
   LIBRE
   BLOQUEADO
+}
+
+enum Currency {
+  BOLIVIANO
+  DOLAR
 }

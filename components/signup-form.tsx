@@ -55,6 +55,22 @@ export function SignupForm() {
 
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 px-1">
+              Correo Electrónico
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
+              <input
+                name="email"
+                type="email"
+                placeholder="correo@ejemplo.com"
+                required
+                className="w-full bg-background border border-border p-4 pl-10 text-sm focus:border-blue-500 outline-none transition-colors font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 px-1">
               Contraseña
             </label>
             <div className="relative">

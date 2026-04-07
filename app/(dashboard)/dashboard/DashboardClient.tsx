@@ -31,7 +31,7 @@ export default function DashboardClient({ initialProjects, initialPublicationsCo
         className="flex flex-col gap-2 relative z-10"
       >
         <h1 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter text-foreground">
-          <RevealText>Mi Centro de Ventas</RevealText>
+          <RevealText>Resumen</RevealText>
         </h1>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
           <p className="text-[10px] font-mono uppercase tracking-widest sm:tracking-[0.5em] text-blue-500/70">

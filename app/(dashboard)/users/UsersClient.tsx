@@ -70,9 +70,10 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
   // Form states
   const [formData, setFormData] = useState({
     username: "",
+    email: "",
     name: "",
     password: "",
-    role: "USUARIO" as "ADMIN" | "USUARIO"
+    role: "USUARIO" as "ADMIN" | "USUARIO" | "ESPECTADOR"
   });
 
   const filteredUsers = users.filter((u: any) => 
@@ -86,6 +87,7 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
     try {
       const newUser = await createUser({
         username: formData.username,
+        email: formData.email,
         name: formData.name,
         password: formData.password,
         role: formData.role
@@ -107,6 +109,7 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
     try {
       const updatedUser = await updateUser(selectedUser.id, {
         username: formData.username,
+        email: formData.email,
         name: formData.name,
         password: formData.password || undefined,
         role: formData.role
@@ -141,13 +144,14 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
   };
 
   const resetForm = () => {
-    setFormData({ username: "", name: "", password: "", role: "USUARIO" });
+    setFormData({ username: "", email: "", name: "", password: "", role: "USUARIO" });
   };
 
   const openEditModal = (user: any) => {
     setSelectedUser(user);
     setFormData({
       username: user.username,
+      email: user.email || "",
       name: user.name,
       password: "",
       role: user.role
@@ -217,13 +221,23 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-[10px] font-mono font-bold text-muted-foreground">{user.username}</span>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-mono font-bold text-muted-foreground">{user.username}</span>
+                    {user.email && (
+                      <span className="text-[9px] text-muted-foreground/60">{user.email}</span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   {user.role === "ADMIN" ? (
                     <div className="flex items-center gap-1.5 text-blue-500">
                       <ShieldCheck className="size-3.5" />
                       <span className="text-[9px] font-black uppercase tracking-wider">ADMINISTRADOR</span>
+                    </div>
+                  ) : user.role === "ESPECTADOR" ? (
+                    <div className="flex items-center gap-1.5 text-purple-500">
+                      <Eye className="size-3.5" />
+                      <span className="text-[9px] font-black uppercase tracking-wider">ESPECTADOR</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -236,7 +250,7 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">{format(new Date(user.createdAt), "dd MMM yyyy", { locale: es })}</span>
                 </TableCell>
                 <TableCell className="px-8 py-6 text-right">
-                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -284,12 +298,21 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">ID de Usuario / Email</Label>
+                  <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Nombre de Usuario</Label>
                   <Input 
                     required 
                     className="rounded-none bg-muted/30 border-border focus:ring-1 focus:ring-blue-500 h-11 text-xs font-bold" 
                     value={formData.username}
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Correo (Opcional)</Label>
+                  <Input 
+                    type="email"
+                    className="rounded-none bg-muted/30 border-border focus:ring-1 focus:ring-blue-500 h-11 text-xs font-bold" 
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -315,6 +338,7 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
                     </SelectTrigger>
                     <SelectContent className="rounded-none bg-card border-border">
                       <SelectItem value="USUARIO" className="text-[10px] font-bold uppercase focus:bg-blue-600 focus:text-white">Usuario Estándar</SelectItem>
+                      <SelectItem value="ESPECTADOR" className="text-[10px] font-bold uppercase focus:bg-blue-600 focus:text-white">Espectador</SelectItem>
                       <SelectItem value="ADMIN" className="text-[10px] font-bold uppercase focus:bg-blue-600 focus:text-white">Administrador</SelectItem>
                     </SelectContent>
                   </Select>
@@ -355,12 +379,21 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">ID de Usuario</Label>
+                  <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Nombre de Usuario</Label>
                   <Input 
                     required 
                     className="rounded-none bg-muted/30 border-border focus:ring-1 focus:ring-amber-500 h-11 text-xs font-bold" 
                     value={formData.username}
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Correo (Opcional)</Label>
+                  <Input 
+                    type="email"
+                    className="rounded-none bg-muted/30 border-border focus:ring-1 focus:ring-amber-500 h-11 text-xs font-bold" 
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -386,6 +419,7 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
                     </SelectTrigger>
                     <SelectContent className="rounded-none bg-card border-border">
                       <SelectItem value="USUARIO" className="text-[10px] font-bold uppercase focus:bg-amber-500 focus:text-white">Usuario Estándar</SelectItem>
+                      <SelectItem value="ESPECTADOR" className="text-[10px] font-bold uppercase focus:bg-amber-500 focus:text-white">Espectador</SelectItem>
                       <SelectItem value="ADMIN" className="text-[10px] font-bold uppercase focus:bg-amber-500 focus:text-white">Administrador</SelectItem>
                     </SelectContent>
                   </Select>

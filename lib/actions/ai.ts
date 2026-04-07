@@ -194,7 +194,7 @@ export async function generateProductImage(
   const prompt = `Generate a professional, clean product photo for a Facebook Marketplace listing.
 Product: ${title}
 Details: ${description || "No additional details"}
-Style: Professional product photography on a clean white/light background, well-lit, high quality, no text overlays, no watermarks.`;
+Style: Professional product photography on a clean white/light background, well-lit, high quality. CRITICAL: NO TEXT, NO LETTERS, NO WORDS, NO OVERLAYS, NO WATERMARKS. ONLY THE PRODUCT.`;
 
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
@@ -281,26 +281,30 @@ export async function improveProductImage(
     1. Keep the EXACT same product and position shown in the original image. Do not change its core design, shape, or colors.
     2. Place the product on a simple, clean, solid white background.
     3. Remove all background noise, clutter, or distracting elements.
-    4. Focus on clarity and sharp details.`;
+    4. Focus on clarity and sharp details.
+    5. CRITICAL: NO TEXT, NO LETTERS, NO WORDS, NO OVERLAYS. ONLY THE PRODUCT.`;
   } else if (improveType === "PERSPECTIVE") {
     typePrompt = `
     1. Keep the EXACT same product shown in the original image.
     2. Change the camera angle and perspective to a dynamic, professional 3/4 view or a different interesting angle to appreciate the product better.
     3. Place the product in a clean, minimalist context (like a wooden table or a marble surface if appropriate) or a solid professional background.
-    4. Improve lighting to show texture and depth.`;
+    4. Improve lighting to show texture and depth.
+    5. CRITICAL: NO TEXT, NO LETTERS, NO WORDS, NO OVERLAYS. ONLY THE PRODUCT.`;
   } else if (improveType === "STUDIO") {
     typePrompt = `
     1. Keep the EXACT same product shown in the original image.
     2. Create a "Studio/Lifestyle" shot. Place the product in a high-end, aesthetically pleasing environment (e.g., a modern living room for home items, a tech desk for electronics).
     3. The lighting should be cinematic and premium.
-    4. Use a shallow depth of field (bokeh effect) to make the product stand out.`;
+    4. Use a shallow depth of field (bokeh effect) to make the product stand out.
+    5. CRITICAL: NO TEXT, NO LETTERS, NO WORDS, NO OVERLAYS. ONLY THE PRODUCT.`;
   }
 
   const prompt = `Based on the provided image, generate an improved product photo for "${title}".
 Product: ${title}
 Details: ${description || "No additional details"}
 Style strict rules: ${typePrompt}
-The goal is to focus 100% on the product and make it look premium and professional for a marketplace listing.`;
+The goal is to focus 100% on the product and make it look premium and professional for a marketplace listing. 
+CRITICAL RULE: DO NOT INCLUDE ANY TEXT, LETTERS, NUMBERS, WORDS, OR TITLES IN THE IMAGE.`;
 
   // Determinar si es una data URL o una URL externa
   let imageContent: Record<string, unknown>;

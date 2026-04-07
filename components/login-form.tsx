@@ -20,14 +20,14 @@ export function LoginForm() {
         <div className="space-y-4">
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 px-1">
-              Usuario
+              Usuario o Correo
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
               <input
                 name="account"
                 type="text"
-                placeholder="nombre_usuario"
+                placeholder="usuario o correo@ejemplo.com"
                 required
                 className="w-full bg-background border border-border p-4 pl-10 text-sm focus:border-blue-500 outline-none transition-colors font-mono"
               />

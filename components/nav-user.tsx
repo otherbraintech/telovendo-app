@@ -95,7 +95,7 @@ export function NavUser({
             <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild className="gap-3 p-3 focus:bg-sidebar-accent focus:text-sidebar-accent-foreground cursor-pointer rounded-none">
-                <Link href="/profile" className="flex items-center gap-3 w-full">
+                <Link href="/dashboard/profile" className="flex items-center gap-3 w-full">
                   <User className="size-3" />
                   <span className="text-[9px] font-black uppercase tracking-widest">Perfil</span>
                 </Link>

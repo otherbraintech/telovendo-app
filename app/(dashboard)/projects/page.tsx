@@ -12,7 +12,7 @@ export default async function ProjectsPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-foreground">
-            Mis <span className="text-blue-500">Proyectos</span>
+            Mis <span className="text-blue-500">proyectos</span>
           </h1>
           <p className="text-xs text-muted-foreground">
             {projects.length > 0
@@ -56,6 +56,7 @@ export default async function ProjectsPage() {
               <p className="text-sm font-bold text-muted-foreground">Ningún proyecto aún</p>
               <p className="text-xs text-muted-foreground/60 mt-1">Crea tu primer proyecto para empezar a publicar.</p>
             </div>
+            <CreateProjectDialog />
           </div>
         )}
       </div>

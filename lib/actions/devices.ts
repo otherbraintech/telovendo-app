@@ -16,9 +16,11 @@ export async function getDevices() {
 }
 
 export async function createDevice(data: {
-  deviceName: string;
+  serial: string;
+  model?: string;
   personName?: string;
   label?: string;
+  triggerId?: string;
   status?: any;
 }) {
   const session = await getSession();
@@ -33,9 +35,11 @@ export async function createDevice(data: {
 }
 
 export async function updateDevice(id: string, data: {
-  deviceName: string;
+  serial: string;
+  model?: string;
   personName?: string;
   label?: string;
+  triggerId?: string;
   status?: any;
 }) {
   const session = await getSession();
@@ -60,4 +64,54 @@ export async function deleteDevice(id: string) {
 
   revalidatePath("/dashboard/devices");
   return JSON.parse(JSON.stringify(device));
+}
+
+export async function syncDevices() {
+  const session = await getSession();
+  if (!session || session.user.role !== "ADMIN") throw new Error("Unauthorized");
+
+  const url = 'http://46.202.146.166:8080/devices';
+  const apiKey = 'genfarmer-secret-key-2024';
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'x-api-key': apiKey
+      },
+      next: { revalidate: 0 }
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const { devices: apiDevices } = await response.json();
+
+    if (!Array.isArray(apiDevices)) throw new Error("Invalid API response structure");
+
+    for (const apiDev of apiDevices) {
+      await prisma.device.upsert({
+        where: { serial: apiDev.serial },
+        update: {
+          model: apiDev.model,
+          triggerId: apiDev.trigger_id,
+          status: "LIBRE",
+        },
+        create: {
+          serial: apiDev.serial,
+          model: apiDev.model,
+          triggerId: apiDev.trigger_id,
+          status: "LIBRE",
+        },
+      });
+    }
+
+    revalidatePath("/dashboard/devices");
+    const updatedDevices = await prisma.device.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+
+    return JSON.parse(JSON.stringify(updatedDevices));
+  } catch (error) {
+    console.error("Error in syncDevices:", error);
+    throw error;
+  }
 }

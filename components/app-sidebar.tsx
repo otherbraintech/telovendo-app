@@ -14,15 +14,14 @@ import {
 import { ModeToggle } from "@/components/mode-toggle"
 import { 
   LayoutDashboard, 
-  Frame, 
   Bot, 
-  Settings2,
-  PackageSearch,
   Zap,
-  Box,
   Cpu,
-  History,
-  ShieldCheck
+  History as HistoryIcon,
+  ShieldCheck,
+  Home,
+  Globe,
+  ExternalLink
 } from "lucide-react"
 
 export function AppSidebar({ 
@@ -85,7 +84,7 @@ export function AppSidebar({
     navMain.push({
       title: "Historial",
       url: "/history",
-      icon: <History className="size-4 text-neutral-500" />,
+      icon: <HistoryIcon className="size-4 text-neutral-500" />,
     });
   }
 
@@ -111,6 +110,22 @@ export function AppSidebar({
         </div>
         <NavMain items={navMain} />
         
+        <div className="mt-8 px-4 mb-2 text-[8px] uppercase font-black tracking-[0.6em] text-sidebar-primary/40">
+          Portal Público
+        </div>
+        <NavMain items={[
+          {
+            title: "Ir a la Web",
+            url: "/",
+            icon: <Home className="size-4 text-emerald-500" />,
+          },
+          {
+            title: "Market Explorer",
+            url: "/marketplace",
+            icon: <Globe className="size-4 text-blue-500" />,
+          }
+        ]} />
+
         <div className="absolute bottom-24 left-0 w-full px-4 opacity-20 pointer-events-none">
            <div className="text-[10px] font-mono tracking-widest uppercase">System V1.0</div>
         </div>

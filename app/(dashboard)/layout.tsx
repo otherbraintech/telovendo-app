@@ -12,6 +12,7 @@ import { getProjects } from "@/lib/actions/projects"
 import { redirect } from "next/navigation"
 
 import { ModeToggle } from "@/components/mode-toggle"
+import { ProjectEnforcer } from "@/components/project-enforcer"
 
 export default async function DashboardLayout({
   children,
@@ -20,6 +21,10 @@ export default async function DashboardLayout({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  if (session.user.role === "ESPECTADOR") {
+    redirect("/welcome");
+  }
 
   const projects = await getProjects();
 
@@ -39,6 +44,7 @@ export default async function DashboardLayout({
           
           <main className="flex-1 overflow-y-auto p-4 md:p-8 relative">
             <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.03] dark:opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(circle, #3b82f6 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+            <ProjectEnforcer projectsCount={projects.length} />
             <div className="mx-auto max-w-7xl relative animate-in fade-in slide-in-from-bottom-6 duration-700">
               {children}
             </div>

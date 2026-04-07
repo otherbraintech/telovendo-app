@@ -15,5 +15,9 @@ export default async function ProfilePage() {
 
   if (!dbUser) redirect("/login");
 
-  return <ProfileClient user={dbUser} stats={{ projectCount, orderCount }} />;
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-12 md:py-24">
+      <ProfileClient user={dbUser} stats={{ projectCount, orderCount }} />
+    </div>
+  );
 }

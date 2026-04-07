@@ -6,20 +6,36 @@ import { updateProfile } from "@/lib/actions/auth";
 
 export default function ProfilePage({ user, stats }: { user: any, stats: any }) {
   const [isPending, startTransition] = useTransition();
-  const [name, setName] = useState(user.name);
+  const [formData, setFormData] = useState({
+    name: user.name || "",
+    username: user.username || "",
+    email: user.email || "",
+    password: ""
+  });
   const [message, setMessage] = useState("");
 
   const handleUpdate = () => {
     startTransition(async () => {
       try {
-        await updateProfile({ name });
+        await updateProfile({ 
+          name: formData.name,
+          username: formData.username,
+          email: formData.email,
+          ...(formData.password ? { password: formData.password } : {})
+        });
         setMessage("Perfil actualizado correctamente");
+        setFormData(prev => ({ ...prev, password: "" })); // Clear password after save
         setTimeout(() => setMessage(""), 3000);
-      } catch (e) {
-        setMessage("Error al actualizar perfil");
+      } catch (e: any) {
+        setMessage(e.message || "Error al actualizar perfil");
       }
     });
   };
+
+  const hasChanges = formData.name !== user.name || 
+                     formData.username !== user.username || 
+                     formData.email !== (user.email || "") || 
+                     formData.password.length > 0;
 
   return (
     <div className="space-y-10 max-w-4xl">
@@ -54,20 +70,44 @@ export default function ProfilePage({ user, stats }: { user: any, stats: any }) 
                 </label>
                 <input 
                   type="text" 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
                   className="w-full bg-background border border-border px-4 py-3 text-sm text-foreground outline-none focus:border-blue-500 transition-all font-medium"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-                  <Mail className="size-3" /> Email / Usuario
+                  <User className="size-3" /> Nombre de Usuario
                 </label>
                 <input 
-                  disabled
                   type="text" 
-                  value={user.username}
-                  className="w-full bg-muted border border-border px-4 py-3 text-sm text-muted-foreground/60 outline-none cursor-not-allowed font-mono"
+                  value={formData.username}
+                  onChange={(e) => setFormData({...formData, username: e.target.value})}
+                  className="w-full bg-background border border-border px-4 py-3 text-sm text-foreground outline-none focus:border-blue-500 transition-all font-mono"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+                  <Mail className="size-3" /> Correo Electrónico
+                </label>
+                <input 
+                  type="email" 
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full bg-background border border-border px-4 py-3 text-sm text-foreground outline-none focus:border-blue-500 transition-all font-mono"
+                  placeholder="correo@ejemplo.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+                  <Shield className="size-3" /> Nueva Contraseña
+                </label>
+                <input 
+                  type="password" 
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  className="w-full bg-background border border-border px-4 py-3 text-sm text-foreground outline-none focus:border-blue-500 transition-all font-mono placeholder:text-muted-foreground/30"
+                  placeholder="Dejar en blanco para no cambiar"
                 />
               </div>
             </div>
@@ -76,7 +116,7 @@ export default function ProfilePage({ user, stats }: { user: any, stats: any }) 
               <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">{message}</p>
               <button 
                 onClick={handleUpdate}
-                disabled={isPending || name === user.name}
+                disabled={isPending || !hasChanges}
                 className="w-full sm:w-auto h-11 px-8 bg-blue-600 hover:bg-blue-500 disabled:opacity-30 text-white font-black text-xs uppercase tracking-widest transition-all cursor-pointer"
               >
                 {isPending ? "GUARDANDO..." : "GUARDAR CAMBIOS"}

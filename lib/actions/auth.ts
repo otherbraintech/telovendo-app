@@ -9,6 +9,7 @@ import { encrypt, decrypt } from "@/lib/auth-utils";
 
 const signupSchema = z.object({
   username: z.string().min(3, "El usuario debe tener al menos 3 caracteres").max(20),
+  email: z.string().email("El correo electrónico no es válido"),
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   confirmPassword: z.string()
@@ -38,7 +39,8 @@ export async function login(prevState: any, formData: FormData) {
       where: {
         OR: [
           { username: account },
-          { usernameLower: account.toLowerCase() }
+          { usernameLower: account.toLowerCase() },
+          { email: account.toLowerCase() }
         ]
       }
     });
@@ -62,12 +64,17 @@ export async function login(prevState: any, formData: FormData) {
       path: "/"
     });
 
-  } catch (error) {
+    if (user.role === "ESPECTADOR") {
+      redirect("/welcome");
+    }
+
+  } catch (error: any) {
+    if (error.digest?.startsWith("NEXT_REDIRECT")) throw error;
     console.error("Login error:", error);
     return { error: "Error en el servidor" };
   }
 
-  redirect("/dashboard");
+  redirect("/projects");
 }
 
 export async function signup(prevState: any, formData: FormData) {
@@ -82,15 +89,23 @@ export async function signup(prevState: any, formData: FormData) {
     return { error: Object.values(errors).flat()[0] || "Datos inválidos" };
   }
 
-  const { username, name, password } = validatedFields.data;
+  const { username, email, name, password } = validatedFields.data;
 
   try {
-    const existingUser = await prisma.user.findUnique({
-      where: { usernameLower: username.toLowerCase() }
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { usernameLower: username.toLowerCase() },
+          { email: email.toLowerCase() }
+        ]
+      }
     });
 
     if (existingUser) {
-      return { error: "El usuario ya existe" };
+      if (existingUser.email === email.toLowerCase()) {
+        return { error: "El correo electrónico ya está registrado" };
+      }
+      return { error: "El nombre de usuario ya existe" };
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -99,6 +114,7 @@ export async function signup(prevState: any, formData: FormData) {
       data: {
         username,
         usernameLower: username.toLowerCase(),
+        email: email.toLowerCase(),
         name,
         passwordHash,
       }
@@ -119,12 +135,17 @@ export async function signup(prevState: any, formData: FormData) {
       path: "/"
     });
 
-  } catch (error) {
+    if (user.role === "ESPECTADOR") {
+      redirect("/welcome");
+    }
+
+  } catch (error: any) {
+    if (error.digest?.startsWith("NEXT_REDIRECT")) throw error;
     console.error("Signup error:", error);
     return { error: "Error al crear la cuenta. Intente nuevamente." };
   }
 
-  redirect("/dashboard");
+  redirect("/projects");
 }
 
 export async function logout() {
@@ -133,23 +154,39 @@ export async function logout() {
   redirect("/login");
 }
 
-export async function updateProfile({ name }: { name: string }) {
+export async function updateProfile(data: { name?: string; username?: string; email?: string; password?: string }) {
   const sessionString = (await (await cookies()).get("session"))?.value;
   if (!sessionString) throw new Error("Unauthorized");
 
   const session = await decrypt(sessionString);
   const userId = session.user.id;
 
+  const updateData: any = {};
+  if (data.name) updateData.name = data.name;
+  if (data.username) {
+    updateData.username = data.username;
+    updateData.usernameLower = data.username.toLowerCase();
+  }
+  if (data.email !== undefined) updateData.email = data.email ? data.email.toLowerCase() : null;
+  if (data.password) {
+    updateData.passwordHash = await bcrypt.hash(data.password, 12);
+  }
+
   const updatedUser = await prisma.user.update({
     where: { id: userId },
-    data: { name }
+    data: updateData
   });
 
-  // Update session cookie with new name
+  // Update session cookie with new data
   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const updatedSession = await encrypt({ 
     ...session, 
-    user: { ...session.user, name: updatedUser.name } 
+    user: { 
+      ...session.user, 
+      name: updatedUser.name,
+      username: updatedUser.username,
+      email: updatedUser.email
+    } 
   });
 
   const cookieStore = await cookies();

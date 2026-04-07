@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth-utils";
 import { revalidatePath } from "next/cache";
+import { syncDevices } from "./devices";
 
 export async function createBotOrder(data: {
   projectId: string;
@@ -16,6 +17,7 @@ export async function createBotOrder(data: {
   listingType?: any;
   quantity: number;
   imageUrls?: string[];
+  listingCurrency?: any;
   // Campos extra
   vehicleYear?: number;
   vehicleMake?: string;
@@ -27,6 +29,14 @@ export async function createBotOrder(data: {
 }) {
   const session = await getSession();
   if (!session) throw new Error("No session");
+
+  const project = await prisma.project.findUnique({
+    where: { id: data.projectId, userId: session.user.id }
+  });
+
+  if (!project) {
+    throw new Error("Proyecto no encontrado. Por favor, asegúrate de haber creado y seleccionado un proyecto válido en el menú lateral.");
+  }
 
   const order = await prisma.botOrder.create({
     data: {
@@ -51,6 +61,7 @@ export async function createBotOrder(data: {
       quantity: data.quantity,
       status: "LISTA",
       imageUrls: data.imageUrls || [],
+      listingCurrency: data.listingCurrency || "BOLIVIANO",
     },
   });
 
@@ -67,10 +78,32 @@ export async function getOrdersByProject(projectId: string) {
       projectId,
       userId: session.user.id 
     },
+    include: {
+      genMarketplaces: true,
+    },
     orderBy: { createdAt: "desc" },
   });
+
+  // Reconciliación de estados automática: 
+  // Si una orden está "GENERANDO" pero todas sus sub-tareas (genMarketplace) están "PUBLICADO", 
+  // entonces la orden debe pasar a "GENERADA".
+  const processedOrders = await Promise.all(orders.map(async (order) => {
+    if (order.status === "GENERANDO" && order.genMarketplaces.length > 0) {
+      const allPublic = order.genMarketplaces.every(m => m.status === "PUBLICADO");
+      if (allPublic) {
+        // Actualizamos en DB (silenciosamente) para futuras lecturas
+        const updated = await prisma.botOrder.update({
+          where: { id: order.id },
+          data: { status: "GENERADA" },
+          include: { genMarketplaces: true }
+        });
+        return updated;
+      }
+    }
+    return order;
+  }));
   
-  return JSON.parse(JSON.stringify(orders));
+  return JSON.parse(JSON.stringify(processedOrders));
 }
 
 export async function updateBotOrder(orderId: string, data: {
@@ -82,6 +115,7 @@ export async function updateBotOrder(orderId: string, data: {
   listingType?: any;
   quantity: number;
   imageUrls?: string[];
+  listingCurrency?: any;
   // Campos extra
   vehicleYear?: number;
   vehicleMake?: string;
@@ -110,6 +144,7 @@ export async function updateBotOrder(orderId: string, data: {
     propBathrooms: data.propBathrooms,
     propArea: data.propArea,
     quantity: data.quantity,
+    listingCurrency: data.listingCurrency,
   };
 
   if (data.imageUrls && data.imageUrls.length > 0) {
@@ -130,7 +165,8 @@ export async function updateBotOrder(orderId: string, data: {
 
 export async function sendOrderToBots(orderId: string) {
   const session = await getSession();
-  if (!session) throw new Error("No session");
+  // 0. Sincronizar dispositivos antes de buscar libres (Asegurar estado real)
+  await syncDevices().catch(err => console.error("Sync error before sending:", err));
 
   // 1. Obtener la orden completa
   const order = await prisma.botOrder.findUnique({
@@ -201,10 +237,10 @@ export async function sendOrderToBots(orderId: string) {
       });
     }
 
-    // 5. Actualizar orden a LISTA (Ya está lista para que el genFarmer la tome)
+    // 5. Actualizar orden a GENERANDO (Ya está siendo procesada)
     await tx.botOrder.update({
       where: { id: orderId },
-      data: { status: "LISTA" },
+      data: { status: "GENERANDO" },
     });
   });
 

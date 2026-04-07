@@ -16,6 +16,7 @@ export async function getUsers() {
             username: true,
             name: true,
             role: true,
+            email: true,
             createdAt: true,
             updatedAt: true,
             // We don't select passwordHash here for basic list
@@ -27,9 +28,10 @@ export async function getUsers() {
 
 export async function createUser(data: {
     username: string;
+    email?: string;
     name: string;
     password: string;
-    role: "ADMIN" | "USUARIO";
+    role: "ADMIN" | "USUARIO" | "ESPECTADOR";
 }) {
     const session = await getSession();
     if (!session || session.user.role !== "ADMIN") throw new Error("Unauthorized");
@@ -40,6 +42,7 @@ export async function createUser(data: {
         data: {
             username: data.username,
             usernameLower: data.username.toLowerCase(),
+            email: data.email ? data.email.toLowerCase() : null,
             name: data.name,
             passwordHash,
             role: data.role,
@@ -52,9 +55,10 @@ export async function createUser(data: {
 
 export async function updateUser(id: string, data: {
     username?: string;
+    email?: string;
     name?: string;
     password?: string;
-    role?: "ADMIN" | "USUARIO";
+    role?: "ADMIN" | "USUARIO" | "ESPECTADOR";
 }) {
     const session = await getSession();
     if (!session || session.user.role !== "ADMIN") throw new Error("Unauthorized");
@@ -63,6 +67,10 @@ export async function updateUser(id: string, data: {
     
     if (data.username) {
         updateData.usernameLower = data.username.toLowerCase();
+    }
+
+    if (data.email !== undefined) {
+        updateData.email = data.email ? data.email.toLowerCase() : null;
     }
 
     if (data.password) {

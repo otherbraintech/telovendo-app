@@ -51,7 +51,7 @@ interface Generation {
     listingType?: string;
   };
   device: {
-    deviceName: string;
+    serial: string;
     personName: string | null;
   } | null;
 }
@@ -82,7 +82,7 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
       const matchesSearch = 
         (g.genTitle?.toLowerCase() || "").includes(search.toLowerCase()) ||
         (g.botOrder.listingTitle?.toLowerCase() || "").includes(search.toLowerCase()) ||
-        (g.device?.deviceName.toLowerCase() || "").includes(search.toLowerCase());
+        (g.device?.serial.toLowerCase() || "").includes(search.toLowerCase());
       
       const matchesFilter = filter === "TODOS" || g.status === filter;
       return matchesSearch && matchesFilter;
@@ -223,9 +223,9 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
           )}
           <h1 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-foreground">
             {mode === "detail" ? (
-              <>Detalle de <span className="text-blue-500">Publicación</span></>
+              <>Detalle de <span className="text-blue-500">Ejecución</span></>
             ) : (
-              <>Estado de <span className="text-blue-500">Envío</span></>
+              <>Mis Bots en <span className="text-blue-500">Vivo</span></>
             )}
           </h1>
           <p className="text-xs text-muted-foreground">
@@ -285,7 +285,7 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                       <th className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground w-1/3">Configuración de Bot (Variante)</th>
                       <th className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Dispositivo</th>
                       <th className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Estado Bot</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground text-right">Auditoría y Gestión</th>
+                      <th className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground text-right">Estado y Gestión</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30">
@@ -313,7 +313,7 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                               </div>
                               <div className="flex flex-col">
                                 <span className="text-[11px] font-black uppercase text-foreground">
-                                  {gen.device?.deviceName || "SIN ASIGNAR"}
+                                  {gen.device?.serial || "SIN ASIGNAR"}
                                 </span>
                                 {gen.device?.personName && (
                                   <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tight">
@@ -379,7 +379,7 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
               <div className="p-6 border-b border-border flex items-center justify-between bg-muted/20">
                 <div className="flex flex-col gap-0.5">
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-blue-500">Configurar Variante</h3>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold">{editingGen.device?.deviceName}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">{editingGen.device?.serial}</p>
                 </div>
                 <button onClick={() => setEditingGen(null)} className="h-10 w-10 flex items-center justify-center border border-border hover:bg-red-500 hover:text-white transition-all cursor-pointer"><X className="size-5"/></button>
               </div>
