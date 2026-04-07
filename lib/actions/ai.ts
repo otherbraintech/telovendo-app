@@ -22,14 +22,15 @@ export async function improveTitle(
 ): Promise<string> {
   const apiKey = getApiKey();
 
-  const systemPrompt = `Eres un experto en ventas y copywriting para Facebook Marketplace en Latinoamérica. 
-Tu trabajo es reescribir títulos de productos para que sean más atractivos, concisos y generen más clics.
-Reglas:
-- Máximo 100 caracteres
-- Usa emojis relevantes (1-2 máximo)
-- Destaca la propuesta de valor
-- No uses todo en mayúsculas
-- Responde SOLO con el título mejorado, sin explicaciones ni comillas`;
+  const systemPrompt = `Eres un experto en ventas para Facebook Marketplace en Latinoamérica. 
+Tu trabajo es reescribir títulos de productos para que sean claros, directos y atractivos SIN usar formatos especiales.
+
+REGLAS:
+- Máximo 100 caracteres.
+- TEXTO PLANO ÚNICAMENTE: Prohibido usar asteriscos, negritas, emojis o símbolos decorativos.
+- Escribe como una persona real, no como una IA o un anuncio publicitario.
+- CRÍTICO: PROHIBIDO incluir números de teléfono o cualquier dato de contacto.
+- Responde SOLO con el título mejorado, sin explicaciones ni comillas.`;
 
   const userPrompt = `Mejora este título de producto para Facebook Marketplace:
 "${currentTitle}"${category ? `\nCategoría: ${category}` : ""}`;
@@ -68,15 +69,21 @@ export async function improveDescription(
 ): Promise<string> {
   const apiKey = getApiKey();
 
-  const systemPrompt = `Eres un experto en ventas y copywriting para Facebook Marketplace en Latinoamérica.
-Tu trabajo es reescribir descripciones de productos para que sean más atractivas y generen más ventas.
-Reglas:
-- Máximo 500 caracteres
-- Usa emojis relevantes pero no excesivos
-- Estructura: Gancho → Beneficios → Detalles → Llamada a la acción
-- Incluye palabras clave de búsqueda naturalmente
-- Tono amigable y profesional
-- Responde SOLO con la descripción mejorada, sin explicaciones ni comillas`;
+  const systemPrompt = `Eres un experto en ventas para Facebook Marketplace en Latinoamérica. 
+Tu trabajo es reescribir descripciones de productos para que suenen como un vendedor REAL y DIRECTO en Facebook.
+
+ESTILO REQUERIDO:
+- TEXTO PLANO ÚNICAMENTE: Prohibido usar emojis, asteriscos (**), negritas o formatos especiales.
+- Escribe de forma natural, como una persona normal publicando un anuncio rápido.
+- Usa lenguaje directo: describe qué es, qué hace y cuánto cuesta.
+
+REGLAS DE CONTENIDO:
+1. MANTÉN DATOS TÉCNICOS: Si hay modelos (ej: T10, T11), tallas o precios de variantes, inclúyelos siempre.
+2. CONSERVA LAS VARIANTES: Si hay varios modelos con precios distintos, lístalos claramente en líneas separadas sin usar símbolos especiales.
+3. ELIMINA EL CONTACTO: Nada de teléfonos, WhatsApp, enlaces o redes sociales. Indica que pregunten por inbox.
+4. Nada de mayúsculas excesivas o lenguaje publicitario rebuscado.
+
+Responde SOLO con el texto de la descripción, sin explicaciones ni comillas.`;
 
   const userPrompt = `Mejora esta descripción para Facebook Marketplace:
 Título: "${currentTitle}"
@@ -105,14 +112,64 @@ Descripción actual: "${currentDescription}"${category ? `\nCategoría: ${catego
   }
 
   const data = await res.json();
-  const content = data.choices?.[0]?.message?.content?.trim() || currentDescription;
-  
-  // Añadir plantilla de contacto si no tiene info de contacto clara
-  const contactTemplate = `\n\n📍 UBICACIÓN: \n📞 CONTACTO: \n💬 CONSULTAS POR INBOX`;
-  if (!content.includes("CONTACTO") && !content.includes("TELEFONO") && !content.includes("celular")) {
-     return content + contactTemplate;
+  return data.choices?.[0]?.message?.content?.trim() || currentDescription;
+}
+
+// ─── ANALIZAR SEGURIDAD DE IMAGEN ──────────────────────────────
+export async function analyzeImageSecurity(imageSource: string): Promise<{ safe: boolean; reason?: string }> {
+  const apiKey = getApiKey();
+
+  const prompt = `Analiza esta imagen para una publicación de Marketplace. 
+  Debes detectar si contiene:
+  1. Números de teléfono o números de WhatsApp (escritos en texto sobre la imagen).
+  2. Códigos QR.
+  3. Enlaces web o redes sociales.
+
+  Responde EXCLUSIVAMENTE con un objeto JSON:
+  {
+    "safe": true | false,
+    "reason": "Breve explicación en español si no es segura"
+  }`;
+
+  let imageContent: Record<string, unknown>;
+  if (imageSource.startsWith("data:")) {
+    imageContent = { type: "image_url", image_url: { url: imageSource } };
+  } else {
+    const imgRes = await fetch(imageSource);
+    const arrayBuffer = await imgRes.arrayBuffer();
+    const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    imageContent = { type: "image_url", image_url: { url: `data:${contentType};base64,${base64}` } };
   }
-  return content;
+
+  try {
+    const res = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.0-flash-001",
+        messages: [{
+          role: "user",
+          content: [{ type: "text", text: prompt }, imageContent],
+        }],
+        max_tokens: 150,
+        temperature: 0.1,
+      }),
+    });
+
+    if (!res.ok) return { safe: true }; // Fallback a seguro si falla la IA
+
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content?.trim() || "{}";
+    const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error("Error en analyzeImageSecurity:", error);
+    return { safe: true };
+  }
 }
 
 // ─── ANALIZAR IMAGEN DE VEHÍCULO ───────────────────────────────
@@ -132,9 +189,9 @@ export async function analyzeVehicleImage(imageSource: string): Promise<any> {
   
   Reglas críticas:
   1. TODO EL TEXTO DEBE ESTAR EN ESPAÑOL.
-  2. Al final de la 'listingDescription' añade SIEMPRE este bloque exacto de contacto:
-     '\\n\\n📍 UBICACIÓN: \\n📞 CONTACTO: \\n💬 CONSULTAS POR INBOX'
-  3. Si no estás seguro de algún dato técnico, deja el campo con un valor genérico razonable.`;
+  2. PROHIBIDO incluir números de teléfono, WhatsApp o bloques de "Contacto" en la descripción.
+  3. Solo describe el vehículo y sus características técnicas.
+  4. Si no estás seguro de algún dato técnico, deja el campo con un valor genérico razonable.`;
 
   let imageContent: Record<string, unknown>;
 

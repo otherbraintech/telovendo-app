@@ -17,6 +17,7 @@ export async function createBotOrder(data: {
   listingType?: any;
   quantity: number;
   imageUrls?: string[];
+  selectedDeviceIds?: string[];
   listingCurrency?: any;
   // Campos extra
   vehicleYear?: number;
@@ -61,6 +62,7 @@ export async function createBotOrder(data: {
       quantity: data.quantity,
       status: "LISTA",
       imageUrls: data.imageUrls || [],
+      selectedDeviceIds: data.selectedDeviceIds || [],
       listingCurrency: data.listingCurrency || "BOLIVIANO",
     },
   });
@@ -115,6 +117,7 @@ export async function updateBotOrder(orderId: string, data: {
   listingType?: any;
   quantity: number;
   imageUrls?: string[];
+  selectedDeviceIds?: string[];
   listingCurrency?: any;
   // Campos extra
   vehicleYear?: number;
@@ -151,6 +154,10 @@ export async function updateBotOrder(orderId: string, data: {
     updateData.imageUrls = data.imageUrls;
   }
 
+  if (data.selectedDeviceIds) {
+    updateData.selectedDeviceIds = data.selectedDeviceIds;
+  }
+
   const order = await prisma.botOrder.update({
     where: { 
       id: orderId,
@@ -174,19 +181,39 @@ export async function sendOrderToBots(orderId: string) {
   });
   if (!order) throw new Error("Orden no encontrada");
 
-  const botCount = order.quantity || 1;
+  let botCount = order.quantity || 1;
+  let devicesToAssign: any[] = [];
 
-  // 2. Buscar devices libres
-  const freeDevices = await prisma.device.findMany({
-    where: { status: "LIBRE" },
-    take: botCount,
-  });
+  // 2. Buscar devices (si hay selección manual, priorizarlos)
+  if (order.selectedDeviceIds && order.selectedDeviceIds.length > 0) {
+    const manualDevices = await prisma.device.findMany({
+      where: { 
+        id: { in: order.selectedDeviceIds },
+        status: "LIBRE" 
+      },
+    });
 
-  if (freeDevices.length === 0) {
-    throw new Error("No hay dispositivos disponibles");
+    if (manualDevices.length === 0) {
+      throw new Error(`Los bots seleccionados (${order.selectedDeviceIds.length}) no están disponibles o están ocupados.`);
+    }
+
+    devicesToAssign = manualDevices;
+    botCount = devicesToAssign.length;
+  } else {
+    // Modo automático: buscar devices libres
+    const freeDevices = await prisma.device.findMany({
+      where: { status: "LIBRE" },
+      take: botCount,
+    });
+
+    if (freeDevices.length === 0) {
+      throw new Error("No hay dispositivos disponibles.");
+    }
+    
+    devicesToAssign = freeDevices;
   }
 
-  const assignCount = Math.min(botCount, freeDevices.length);
+  const assignCount = devicesToAssign.length;
 
   // 3. Generar variantes IA de título y descripción
   let variants: Array<{ title: string; description: string }>;
@@ -208,7 +235,7 @@ export async function sendOrderToBots(orderId: string) {
   }
 
   // 4. Crear GenMarketplace para cada device y marcarlos como OCUPADO
-  const devicesToAssign = freeDevices.slice(0, assignCount);
+  // devicesToAssign ya está definido arriba
 
   await prisma.$transaction(async (tx) => {
     for (let i = 0; i < devicesToAssign.length; i++) {
@@ -237,10 +264,10 @@ export async function sendOrderToBots(orderId: string) {
       });
     }
 
-    // 5. Actualizar orden a GENERANDO (Ya está siendo procesada)
+    // 5. Actualizar orden a GENERADA (Ya fue derivada a todos los bots asignados exitosamente)
     await tx.botOrder.update({
       where: { id: orderId },
-      data: { status: "GENERANDO" },
+      data: { status: "GENERADA" },
     });
   });
 

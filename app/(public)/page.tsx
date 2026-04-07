@@ -113,30 +113,39 @@ export default async function LandingPage() {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-6 w-full max-w-2xl mx-auto animate-blur-fade [animation-delay:0.5s] opacity-0 relative z-20" style={{ animationFillMode: "forwards" }}>
+        <div className="flex flex-col md:flex-row gap-5 w-[85%] md:w-full max-w-xs md:max-w-2xl mx-auto animate-blur-fade [animation-delay:0.5s] opacity-0 relative z-20" style={{ animationFillMode: "forwards" }}>
           <Link 
             href="/marketplace" 
-            className="flex-1 h-16 px-10 rounded-none bg-blue-600 text-white hover:bg-blue-700 font-black text-xs md:text-sm uppercase tracking-[0.2em] transition-all duration-300 hover:scale-[1.05] active:scale-[0.98] shadow-2xl flex items-center justify-center gap-4 group cursor-pointer"
+            className="flex-1 min-h-[52px] md:min-h-[70px] px-8 rounded-none bg-blue-600 text-white hover:bg-white hover:text-blue-600 font-black text-sm md:text-base uppercase tracking-[0.25em] transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] shadow-2xl flex flex-col items-center justify-center gap-1.5 group cursor-pointer"
           >
-            Explorar Catálogo
-            <ShoppingBag className="w-5 h-5 transition-transform group-hover:translate-y-[-2px]" />
+            <div className="flex items-center gap-3">
+              Explorar
+              <ShoppingBag className="size-5 md:size-6 transition-transform group-hover:translate-y-[-2px]" />
+            </div>
+            <span className="text-[7px] md:text-[8px] opacity-40 font-bold tracking-[0.3em] uppercase group-hover:text-blue-600/60">Catálogo</span>
           </Link>
 
           {isAuthenticated ? (
             <Link 
               href="/dashboard" 
-              className="flex-1 h-16 px-10 rounded-none border border-foreground/20 bg-muted/20 text-foreground hover:bg-foreground hover:text-background font-black text-xs md:text-sm uppercase tracking-[0.2em] transition-all duration-300 hover:scale-[1.05] active:scale-[0.98] flex items-center justify-center gap-4 group cursor-pointer"
+              className="flex-1 min-h-[52px] md:min-h-[70px] px-8 rounded-none border border-foreground/30 bg-muted/20 text-foreground hover:bg-foreground hover:text-background font-black text-sm md:text-base uppercase tracking-[0.25em] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex flex-col items-center justify-center gap-1.5 group cursor-pointer"
             >
-              Ir al Dashboard
-              <LayoutDashboard className="w-5 h-5 transition-transform group-hover:rotate-12" />
+              <div className="flex items-center gap-3">
+                Dashboard
+                <LayoutDashboard className="size-5 md:size-6 transition-transform group-hover:rotate-12" />
+              </div>
+              <span className="text-[7px] md:text-[8px] opacity-40 font-bold tracking-[0.3em] uppercase group-hover:text-background/60">Control</span>
             </Link>
           ) : (
             <Link 
               href="/login" 
-              className="flex-1 h-16 px-10 rounded-none border border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background font-black text-xs md:text-sm uppercase tracking-[0.2em] transition-all duration-300 hover:scale-[1.05] active:scale-[0.98] flex items-center justify-center gap-4 group cursor-pointer"
+              className="flex-1 min-h-[76px] md:min-h-[70px] px-8 rounded-none border border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background font-black text-sm md:text-base uppercase tracking-[0.25em] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex flex-col items-center justify-center gap-1.5 group cursor-pointer"
             >
-              Publicar Artículo
-              <Tag className="w-5 h-5 transition-transform group-hover:scale-110" />
+              <div className="flex items-center gap-3">
+                Publicar
+                <Tag className="size-5 md:size-6 transition-transform group-hover:scale-125" />
+              </div>
+              <span className="text-[7px] md:text-[8px] opacity-40 font-bold tracking-[0.3em] uppercase group-hover:text-background/60">Vender</span>
             </Link>
           )}
         </div>
@@ -144,47 +153,47 @@ export default async function LandingPage() {
 
       {/* Featured Categories */}
       <section className="w-full pb-32 space-y-16 relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-border pb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-border pb-8">
             <div className="space-y-2">
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500">¿Qué necesitas hoy?</span>
-              <h2 className="text-2xl md:text-4xl font-black tracking-tighter italic uppercase">Explora Categorías</h2>
+              <h2 className="text-3xl md:text-4xl font-black tracking-tighter italic uppercase leading-none">Explora Categorías</h2>
             </div>
             <Link href="/marketplace" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-blue-500 transition-colors flex items-center gap-2">
                Ver Todo el Marketplace <ArrowRight className="size-3" />
             </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl mx-auto">
-          <Link href="/marketplace" className="group bg-card border border-border p-10 hover:border-blue-500/30 transition-all duration-500 shadow-sm relative overflow-hidden cursor-pointer">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 w-full max-w-6xl mx-auto">
+          <Link href="/marketplace" className="group bg-card border border-border p-6 md:p-10 hover:border-blue-500/30 transition-all duration-500 shadow-sm relative overflow-hidden cursor-pointer">
              <div className="absolute -right-10 -bottom-10 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
-                <Car className="size-48 text-blue-500" />
+                <Car className="size-32 md:size-48 text-blue-500" />
              </div>
              <Car className="w-6 h-6 text-blue-500 mb-6 group-hover:scale-110 transition-transform" />
              <div className="space-y-2">
-                <div className="text-2xl font-black italic tracking-tighter uppercase">Vehículos</div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">Autos, Motos y más</div>
+                <div className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">Vehículos</div>
+                <div className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">Autos, Motos y más</div>
              </div>
           </Link>
 
-          <Link href="/marketplace" className="group bg-card border border-border p-10 hover:border-emerald-500/30 transition-all duration-500 shadow-sm relative overflow-hidden cursor-pointer">
+          <Link href="/marketplace" className="group bg-card border border-border p-6 md:p-10 hover:border-emerald-500/30 transition-all duration-500 shadow-sm relative overflow-hidden cursor-pointer">
              <div className="absolute -right-10 -bottom-10 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
-                <Home className="size-48 text-emerald-500" />
+                <Home className="size-32 md:size-48 text-emerald-500" />
              </div>
              <Home className="w-6 h-6 text-emerald-500 mb-6 group-hover:scale-110 transition-transform" />
              <div className="space-y-2">
-                <div className="text-2xl font-black italic tracking-tighter uppercase">Inmuebles</div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">Ventas y Alquileres</div>
+                <div className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">Inmuebles</div>
+                <div className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">Ventas y Alquileres</div>
              </div>
           </Link>
 
-          <Link href="/marketplace" className="group bg-card border border-border p-10 hover:border-amber-500/30 transition-all duration-500 shadow-sm relative overflow-hidden cursor-pointer">
+          <Link href="/marketplace" className="group bg-card border border-border p-6 md:p-10 hover:border-amber-500/30 transition-all duration-500 shadow-sm relative overflow-hidden cursor-pointer sm:col-span-2 md:col-span-1">
              <div className="absolute -right-10 -bottom-10 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
-                <Smartphone className="size-48 text-amber-500" />
+                <Smartphone className="size-32 md:size-48 text-amber-500" />
              </div>
              <Smartphone className="w-6 h-6 text-amber-500 mb-6 group-hover:scale-110 transition-transform" />
              <div className="space-y-2">
-                <div className="text-2xl font-black italic tracking-tighter uppercase">Electrónica</div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">Tecnología de punta</div>
+                <div className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">Electrónica</div>
+                <div className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">Tecnología de punta</div>
              </div>
           </Link>
         </div>

@@ -64,6 +64,7 @@ model BotOrder {
   propArea            Int?
   // Imágenes (almacenadas como URLs o paths)
   imageUrls           String[]            @default([])
+  selectedDeviceIds   String[]            @default([])
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   project             Project             @relation(fields: [projectId], references: [id])

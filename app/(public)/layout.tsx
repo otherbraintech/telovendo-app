@@ -16,14 +16,16 @@ export default async function PublicLayout({
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-500 flex flex-col">
       {/* NAVBAR */}
-      <nav className="sticky top-0 w-full z-50 px-6 py-4 backdrop-blur-xl border-b border-white/5 bg-background/50 flex justify-between items-center">
-        <div className="flex items-center gap-12">
-          <Link href="/" className="flex items-center gap-4 group">
+      <nav className="sticky top-0 w-full z-50 px-4 sm:px-6 py-4 backdrop-blur-xl border-b border-white/5 bg-background/50 flex justify-between items-center transition-all duration-300">
+        <div className="flex items-center gap-4 sm:gap-12 overflow-hidden">
+          <Link href="/" className="flex items-center gap-2 group shrink-0">
             <img src="/iconTeloVendo.svg" alt="Logo" className="w-8 h-8 animate-pulse dark:invert transition-transform group-hover:scale-110" />
-            <span className="font-black tracking-[0.2em] text-lg uppercase italic">Telo<span className="text-blue-600 dark:text-blue-500">Vendo</span></span>
+            <span className="font-black tracking-[0.1em] sm:tracking-[0.2em] text-base sm:text-lg uppercase italic truncate">
+              Telo<span className="text-blue-600 dark:text-blue-500">Vendo</span>
+            </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-8 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 transition-colors">
+          <div className="hidden lg:flex items-center gap-8 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 transition-colors shrink-0">
             <Link href="/" className="hover:text-blue-500 transition-colors">Inicio</Link>
             <Link href="/marketplace" className="hover:text-blue-500 transition-colors flex items-center gap-2">
               <ShoppingCart className="size-3" />
@@ -32,14 +34,15 @@ export default async function PublicLayout({
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <ModeToggle />
+          <div className="h-4 w-px bg-white/10 hidden sm:block mx-1" />
           {isAuthenticated ? (
             <PublicUserMenu user={session.user} />
           ) : (
             <Link 
               href="/login" 
-              className="px-5 py-2 border border-foreground/20 hover:bg-foreground hover:text-background font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
+              className="px-4 py-2 border border-foreground/20 hover:bg-foreground hover:text-background font-black text-[9px] sm:text-[10px] uppercase tracking-widest transition-all cursor-pointer whitespace-nowrap"
             >
               Ingresar
             </Link>
