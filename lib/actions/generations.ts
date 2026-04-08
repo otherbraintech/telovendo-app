@@ -46,9 +46,23 @@ export async function updateBotOrderStatus(orderId: string, status: any) {
   const session = await getSession();
   if (!session) throw new Error("No session");
 
-  const updated = await prisma.botOrder.update({
-    where: { id: orderId, userId: session.user.id },
-    data: { status },
+  const updated = await prisma.$transaction(async (tx) => {
+    if (status === "PAUSADA") {
+      await tx.genMarketplace.updateMany({
+        where: { orderId, status: "PENDIENTE", userId: session.user.id },
+        data: { status: "PAUSADO" }
+      });
+    } else if (status === "LISTA") {
+      await tx.genMarketplace.updateMany({
+        where: { orderId, status: "PAUSADO", userId: session.user.id },
+        data: { status: "PENDIENTE" }
+      });
+    }
+
+    return await tx.botOrder.update({
+      where: { id: orderId, userId: session.user.id },
+      data: { status },
+    });
   });
 
   return JSON.parse(JSON.stringify(updated));

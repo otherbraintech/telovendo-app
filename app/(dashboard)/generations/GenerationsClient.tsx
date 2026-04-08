@@ -88,6 +88,7 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
   const [editingGen, setEditingGen] = useState<Generation | null>(null);
   const [saving, setSaving] = useState<number | null>(null);
   const [orderActionLoading, setOrderActionLoading] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ isOpen: boolean; title: string; desc: string; action: () => void; isDestructive?: boolean } | null>(null);
   const [viewingSpecsOrder, setViewingSpecsOrder] = useState<any | null>(null);
   const [viewingGen, setViewingGen] = useState<Generation | null>(null);
   const { setActiveOrderName } = useProjectStore();
@@ -144,45 +145,90 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
   };
 
   const handleCancelOrder = async (orderId: string) => {
-    if (!confirm("¿Deseas cancelar la operación completa?")) return;
-    try {
-      setOrderActionLoading(orderId);
-      await cancelBotOrder(orderId);
-      setGenerations(prev => prev.map(g => g.orderId === orderId ? { ...g, botOrder: { ...g.botOrder, status: "CANCELADA" } } : g));
-      toast.success("Operación cancelada");
-    } catch (err) {
-      toast.error("Error al cancelar");
-    } finally {
-      setOrderActionLoading(null);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "¿Cancelar operación completa?",
+      desc: "Esto cancelará la publicación y abortará todas las publicaciones que sigan pendientes en tus bots. Esta acción no se puede deshacer.",
+      isDestructive: true,
+      action: async () => {
+        try {
+          setConfirmDialog(null);
+          setOrderActionLoading(orderId);
+          await cancelBotOrder(orderId);
+          setGenerations(prev => prev.map(g => g.orderId === orderId ? { 
+            ...g, 
+            status: g.status === 'PENDIENTE' ? 'CANCELADO' : g.status,
+            botOrder: { ...g.botOrder, status: "CANCELADA" } 
+          } : g));
+          toast.success("Operación cancelada");
+        } catch (err) {
+          toast.error("Error al cancelar");
+        } finally {
+          setOrderActionLoading(null);
+        }
+      }
+    });
   };
 
   const handleDeleteOrder = async (orderId: string) => {
-    if (!confirm("¿Eliminar publicación permanentemente?")) return;
-    try {
-      setOrderActionLoading(orderId);
-      await deleteBotOrder(orderId);
-      toast.success("Publicación eliminada");
-      if (groupedOrders.length === 1) router.push("/orders");
-      else setGenerations(prev => prev.filter(g => g.orderId !== orderId));
-    } catch (err) {
-      toast.error("Error al eliminar");
-    } finally {
-      setOrderActionLoading(null);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "¿Eliminar publicación permanentemente?",
+      desc: "Se borrará por completo la publicación y todo su historial de generaciones de forma irreversible.",
+      isDestructive: true,
+      action: async () => {
+        try {
+          setConfirmDialog(null);
+          setOrderActionLoading(orderId);
+          await deleteBotOrder(orderId);
+          toast.success("Publicación eliminada");
+          if (groupedOrders.length === 1) router.push("/orders");
+          else setGenerations(prev => prev.filter(g => g.orderId !== orderId));
+        } catch (err) {
+          toast.error("Error al eliminar");
+        } finally {
+          setOrderActionLoading(null);
+        }
+      }
+    });
   };
 
-  const handleChangeOrderStatus = async (orderId: string, newStatus: string) => {
-    try {
-      setOrderActionLoading(orderId);
-      await updateBotOrderStatus(orderId, newStatus);
-      setGenerations(prev => prev.map(g => g.orderId === orderId ? { ...g, botOrder: { ...g.botOrder, status: newStatus } } : g));
-      toast.success(`Publicación: ${newStatus}`);
-    } catch (err) {
-      toast.error("Error operativo");
-    } finally {
-      setOrderActionLoading(null);
-    }
+  const handleChangeOrderStatus = async (orderId: string, newStatus: "PAUSADA" | "LISTA") => {
+    setConfirmDialog({
+      isOpen: true,
+      title: newStatus === "PAUSADA" ? "¿Pausar ejecución de todos los bots?" : "¿Reanudar ejecución de todos los bots?",
+      desc: newStatus === "PAUSADA" 
+        ? "Esto pondrá todas las sub-publicaciones pendientes de esta orden en pausa. Los bots reservarán el espacio pero no trabajarán."
+        : "Esto reactivará todas las sub-publicaciones pausadas de esta orden para que los bots comiencen a trabajar inmediatamente.",
+      action: async () => {
+        try {
+          setConfirmDialog(null);
+          setOrderActionLoading(orderId);
+          await updateBotOrderStatus(orderId, newStatus);
+          
+          setGenerations(prev => prev.map(g => {
+            if (g.orderId === orderId) {
+               let updatedGenStatus = g.status;
+               if (newStatus === "PAUSADA" && g.status === "PENDIENTE") updatedGenStatus = "PAUSADO";
+               if (newStatus === "LISTA" && g.status === "PAUSADO") updatedGenStatus = "PENDIENTE";
+
+               return { 
+                 ...g, 
+                 status: updatedGenStatus,
+                 botOrder: { ...g.botOrder, status: newStatus } 
+               };
+            }
+            return g;
+          }));
+
+          toast.success(`Publicación: ${newStatus === "LISTA" ? "REANUDADA" : "PAUSADA"}`);
+        } catch (err) {
+          toast.error("Error operativo");
+        } finally {
+          setOrderActionLoading(null);
+        }
+      }
+    });
   };
 
   const handleRetryMissingBots = async (orderId: string) => {
@@ -201,16 +247,23 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
   };
 
   const handleDeleteGen = async (id: number) => {
-    if (!confirm("¿Eliminar ejecución específica?")) return;
-    try {
-      await deleteGenMarketplace(id);
-      setGenerations(prev => prev.filter(g => g.id !== id));
-      toast.success("Ejecución eliminada");
-    } catch (err) {
-      toast.error("Error al eliminar");
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "¿Eliminar ejecución específica?",
+      desc: "Estás a punto de borrar esta subtarea delegada a uno de tus bots. No se podrá recuperar.",
+      isDestructive: true,
+      action: async () => {
+        try {
+          setConfirmDialog(null);
+          await deleteGenMarketplace(id);
+          setGenerations(prev => prev.filter(g => g.id !== id));
+          toast.success("Ejecución eliminada");
+        } catch (err) {
+          toast.error("Error al eliminar");
+        }
+      }
+    });
   };
-
   const getTypeConfig = (type?: string) => {
     switch(type) {
       case "VEHICULO": return { label: "Vehículo", icon: Car, color: "text-amber-500" };
@@ -768,6 +821,37 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                 className="w-full h-14 bg-foreground text-background text-[11px] font-black uppercase tracking-[0.3em] hover:bg-blue-600 hover:text-white transition-all active:scale-[0.98] cursor-pointer shadow-xl shadow-blue-600/10"
               >
                 Cerrar Detalle
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMATION DIALOG */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-sm border border-border shadow-2xl flex flex-col pt-6 pb-4 px-6 gap-4 animate-in zoom-in-95 duration-300">
+            <div>
+              <h3 className="text-lg font-black uppercase tracking-widest text-foreground">{confirmDialog.title}</h3>
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed font-medium">{confirmDialog.desc}</p>
+            </div>
+            
+            <div className="flex items-center gap-3 justify-end mt-4">
+              <button 
+                onClick={() => setConfirmDialog(null)}
+                className="h-10 px-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:bg-muted/50 border border-transparent hover:border-border transition-all"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmDialog.action}
+                className={`h-10 px-6 text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-lg ${
+                  confirmDialog.isDestructive 
+                    ? "bg-red-600 hover:bg-red-500 shadow-red-600/20" 
+                    : "bg-blue-600 hover:bg-blue-500 shadow-blue-600/20"
+                }`}
+              >
+                Confirmar
               </button>
             </div>
           </div>

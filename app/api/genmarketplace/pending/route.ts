@@ -40,22 +40,6 @@ export async function GET(request: Request) {
           redesSociales: true,
         },
       },
-      botOrder: {
-        select: {
-          id: true,
-          orderName: true,
-          listingTitle: true,
-          listingDescription: true,
-          listingPrice: true,
-          listingCurrency: true,
-          listingCategory: true,
-          listingCondition: true,
-          listingType: true,
-          imageUrls: true,
-          quantity: true,
-          status: true,
-        },
-      },
     },
   });
 
@@ -83,8 +67,6 @@ export async function GET(request: Request) {
           redesSociales: gen.device.redesSociales,
         }
       : null,
-    // Orden original
-    order: gen.botOrder,
   }));
 
   return NextResponse.json({

@@ -236,7 +236,7 @@ export async function sendOrderToBots(orderId: string) {
           genTitle: title,
           genDescription: description,
           imageUrls: order.imageUrls, // Las imágenes son las mismas para todos
-          status: "PENDIENTE",
+          status: "PAUSADO", // Se crea pausado para que el usuario inicie manualmente
         },
       });
 
@@ -266,12 +266,38 @@ export async function cancelBotOrder(orderId: string) {
   const session = await getSession();
   if (!session) throw new Error("No session");
 
-  const order = await prisma.botOrder.update({
-    where: { id: orderId, userId: session.user.id },
-    data: { status: "CANCELADA" },
+  const order = await prisma.$transaction(async (tx) => {
+    // 1. Obtener generaciones pendientes para liberar sus dispositivos
+    const pendingGens = await tx.genMarketplace.findMany({
+      where: { orderId, status: "PENDIENTE" },
+      select: { deviceId: true }
+    });
+
+    const deviceIds = pendingGens.map(g => g.deviceId).filter(Boolean) as string[];
+
+    // 2. Liberar los dispositivos a 'LIBRE'
+    if (deviceIds.length > 0) {
+      await tx.device.updateMany({
+        where: { id: { in: deviceIds } },
+        data: { status: "LIBRE" },
+      });
+    }
+
+    // 3. Cancelar las generaciones pendientes
+    await tx.genMarketplace.updateMany({
+      where: { orderId, status: "PENDIENTE" },
+      data: { status: "CANCELADO" },
+    });
+
+    // 4. Cancelar la orden principal
+    return await tx.botOrder.update({
+      where: { id: orderId, userId: session.user.id },
+      data: { status: "CANCELADA" },
+    });
   });
 
   revalidatePath("/dashboard/orders");
+  revalidatePath("/dashboard/generations");
   return JSON.parse(JSON.stringify(order));
 }
 
@@ -366,7 +392,7 @@ export async function retryMissingBots(orderId: string) {
           genTitle: title,
           genDescription: description,
           imageUrls: order.imageUrls,
-          status: "PENDIENTE",
+          status: "PAUSADO", // Se crea pausado para que el usuario inicie manualmente
         },
       });
 
