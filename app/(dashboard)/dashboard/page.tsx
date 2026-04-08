@@ -1,10 +1,10 @@
-import { getProjects } from "@/lib/actions/projects"
-import { getTotalOrdersCount } from "@/lib/actions/orders"
+import { getDashboardStats } from "@/lib/actions/dashboard"
 import DashboardClient from "./DashboardClient"
 
 export default async function DashboardPage() {
-  const projects = await getProjects()
-  const publicationsCount = await getTotalOrdersCount()
+  const stats = await getDashboardStats()
 
-  return <DashboardClient initialProjects={projects} initialPublicationsCount={publicationsCount} />
+  if (!stats) return null;
+
+  return <DashboardClient stats={stats} />
 }

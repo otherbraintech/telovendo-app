@@ -39,9 +39,6 @@ export function LoginForm() {
               <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                 Contraseña
               </label>
-              <a href="#" className="text-[9px] uppercase tracking-widest text-neutral-600 hover:text-blue-500 transition-colors">
-                ¿Olvidaste tu clave?
-              </a>
             </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />

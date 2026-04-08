@@ -215,42 +215,29 @@ export default function OrdersClient() {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       
-      setIsVerifyingImage(true);
-      toast.info("Verificando seguridad de las imágenes...");
-
-      try {
-        for (const file of files) {
-          const base64 = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(file);
-          });
-
-          const security = await analyzeImageSecurity(base64);
-          if (!security.safe) {
-             toast.error("Imagen rechazada", {
-               description: security.reason || "Se detectaron datos de contacto o QR prohibidos.",
-               duration: 6000
-             });
-             setIsVerifyingImage(false);
-             return; // Detener carga si una imagen es rechazada
-          }
+      // Validación básica del lado del cliente (sin Server Action para evitar 500 en Vercel)
+      const validFiles = files.filter(file => {
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+        if (!validTypes.includes(file.type) && !file.type.startsWith('image/')) {
+          toast.error("Formato no soportado", { description: `El archivo "${file.name}" no es una imagen válida.` });
+          return false;
         }
-
-        const oldImagesLength = editingMixedImages.length;
-        setEditSelectedFiles(prev => [...prev, ...files]);
-        
-        // Forzar que el visor muestre la primera de las nuevas imágenes cargadas
-        setActiveImageIndex(oldImagesLength);
-        
-        // Si es un vehículo y no hay datos, intentar analizar con IA
-        if (editForm.listingType === "VEHICULO" && !editForm.listingTitle && files.length > 0) {
-          handleAutoDetectVehicle(files[0]);
+        if (file.size > 20 * 1024 * 1024) { // 20MB máx
+          toast.error("Imagen demasiado grande", { description: `"${file.name}" supera los 20MB.` });
+          return false;
         }
-      } catch (err) {
-        toast.error("Error validando imagen");
-      } finally {
-        setIsVerifyingImage(false);
+        return true;
+      });
+
+      if (validFiles.length === 0) return;
+
+      const oldImagesLength = editingMixedImages.length;
+      setEditSelectedFiles(prev => [...prev, ...validFiles]);
+      setActiveImageIndex(oldImagesLength);
+      
+      // Si es un vehículo y no hay datos, intentar analizar con IA
+      if (editForm.listingType === "VEHICULO" && !editForm.listingTitle && validFiles.length > 0) {
+        handleAutoDetectVehicle(validFiles[0]);
       }
     }
   }
