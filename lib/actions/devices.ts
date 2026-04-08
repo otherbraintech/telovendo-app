@@ -67,13 +67,18 @@ export async function deleteDevice(id: string) {
 }
 
 export async function syncDevices() {
+  console.log("\n[DEBUG] --- syncDevices iniciada ---");
   const session = await getSession();
-  if (!session || session.user.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || session.user.role !== "ADMIN") {
+    console.error("[DEBUG] No autorizado o sin sesión");
+    throw new Error("Unauthorized");
+  }
 
   const url = 'http://46.202.146.166:8080/devices';
   const apiKey = 'genfarmer-secret-key-2024';
 
   try {
+    console.log("[DEBUG] Haciendo fetch a:", url);
     const response = await fetch(url, {
       headers: {
         'x-api-key': apiKey
@@ -81,25 +86,59 @@ export async function syncDevices() {
       next: { revalidate: 0 }
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      console.error("[DEBUG] HTTP status no ok:", response.status);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     
-    const { devices: apiDevices } = await response.json();
+    // Obtenemos el json como objeto general
+    const data = await response.json();
+    console.log("\n====== ESTRUCTURA EXACTA CONSOLE.LOG ======");
+    console.log(JSON.stringify(data, null, 2));
+    console.log("============================================\n");
 
-    if (!Array.isArray(apiDevices)) throw new Error("Invalid API response structure");
+    const apiDevices = data.devices || [];
+
+    if (!Array.isArray(apiDevices)) {
+      console.error("[DEBUG] apiDevices no es array:", typeof apiDevices);
+      throw new Error("Invalid API response structure");
+    }
 
     for (const apiDev of apiDevices) {
+      // Intentar extraer personName de la primera red social disponible
+      let personName = null;
+      if (Array.isArray(apiDev.redes_sociales)) {
+         const socialContact = apiDev.redes_sociales.find((red: any) => red.user && red.user.trim() !== "");
+         if (socialContact) {
+            personName = socialContact.user;
+         }
+      }
+
+      // Determinar el nuevo estado
+      const finalStatus = (Array.isArray(apiDev.redes_sociales) && apiDev.redes_sociales.length > 0) 
+        ? "LIBRE" 
+        : "SIN_CUENTAS";
+
       await prisma.device.upsert({
         where: { serial: apiDev.serial },
         update: {
           model: apiDev.model,
           triggerId: apiDev.trigger_id,
-          status: "LIBRE",
+          personName: personName, // Automatically extracted name
+          alias: apiDev.alias,
+          estadoDb: apiDev.estado_db,
+          redesSociales: apiDev.redes_sociales,
+          status: finalStatus,
         },
         create: {
           serial: apiDev.serial,
           model: apiDev.model,
           triggerId: apiDev.trigger_id,
-          status: "LIBRE",
+          personName: personName,
+          alias: apiDev.alias,
+          estadoDb: apiDev.estado_db,
+          redesSociales: apiDev.redes_sociales,
+          status: finalStatus,
         },
       });
     }

@@ -184,35 +184,17 @@ export async function sendOrderToBots(orderId: string) {
   let botCount = order.quantity || 1;
   let devicesToAssign: any[] = [];
 
-  // 2. Buscar devices (si hay selección manual, priorizarlos)
-  if (order.selectedDeviceIds && order.selectedDeviceIds.length > 0) {
-    const manualDevices = await prisma.device.findMany({
-      where: { 
-        id: { in: order.selectedDeviceIds },
-        status: "LIBRE" 
-      },
-    });
+  // Modo automático: buscar devices libres
+  const freeDevices = await prisma.device.findMany({
+    where: { status: "LIBRE" },
+    take: botCount,
+  });
 
-    if (manualDevices.length === 0) {
-      throw new Error(`Los bots seleccionados (${order.selectedDeviceIds.length}) no están disponibles o están ocupados.`);
-    }
-
-    devicesToAssign = manualDevices;
-    botCount = devicesToAssign.length;
-  } else {
-    // Modo automático: buscar devices libres
-    const freeDevices = await prisma.device.findMany({
-      where: { status: "LIBRE" },
-      take: botCount,
-    });
-
-    if (freeDevices.length === 0) {
-      throw new Error("No hay dispositivos disponibles.");
-    }
-    
-    devicesToAssign = freeDevices;
+  if (freeDevices.length === 0) {
+    throw new Error("No hay dispositivos LIBRES disponibles en este momento. Inténtelo más tarde.");
   }
-
+  
+  devicesToAssign = freeDevices;
   const assignCount = devicesToAssign.length;
 
   // 3. Generar variantes IA de título y descripción
@@ -314,4 +296,88 @@ export async function getTotalOrdersCount() {
   });
   
   return count;
+}
+
+// Nueva Action para reintentar asignar Bots faltantes a una orden
+export async function retryMissingBots(orderId: string) {
+  const session = await getSession();
+  
+  // 0. Sincronizar dispositivos
+  await syncDevices().catch(err => console.error("Sync error before retry:", err));
+
+  // 1. Obtener orden completa y cantidad actual de generaciones
+  const order = await prisma.botOrder.findUnique({
+    where: { id: orderId, userId: session.user.id },
+    include: { genMarketplaces: true }
+  });
+  
+  if (!order) throw new Error("Orden no encontrada");
+
+  const currentCount = order.genMarketplaces.length;
+  const targetCount = order.quantity || 1;
+  const missingCount = targetCount - currentCount;
+
+  if (missingCount <= 0) {
+    throw new Error("La orden ya tiene la cantidad completa de bots asignados.");
+  }
+
+  // 2. Buscar devices libres necesarios
+  const freeDevices = await prisma.device.findMany({
+    where: { status: "LIBRE" },
+    take: missingCount,
+  });
+
+  if (freeDevices.length === 0) {
+    throw new Error("No hay nuevos dispositivos LIBRES en este momento.");
+  }
+
+  const assignCount = freeDevices.length;
+
+  // 3. Generar variantes IA para los faltantes
+  let variants: Array<{ title: string; description: string }>;
+  try {
+    const { generateBotVariants } = await import("@/lib/actions/ai");
+    variants = await generateBotVariants(
+      order.listingTitle || order.orderName,
+      order.listingDescription || "",
+      assignCount,
+      order.listingCategory
+    );
+  } catch (err) {
+    console.error("Error generating AI variants recursively:", err);
+    variants = Array.from({ length: assignCount }, (_, i) => ({
+      title: `${order.listingTitle || order.orderName} ${["🔥", "⭐", "💎", "💯", "🎯"][Math.floor(Math.random() * 5)]}`,
+      description: order.listingDescription || "",
+    }));
+  }
+
+  // 4. Crear los GenMarketplace faltantes
+  await prisma.$transaction(async (tx) => {
+    for (let i = 0; i < freeDevices.length; i++) {
+      const device = freeDevices[i];
+      const title = variants[i]?.title || variants[0]?.title || order.listingTitle || order.orderName;
+      const description = variants[i]?.description || variants[0]?.description || order.listingDescription || "";
+
+      await tx.genMarketplace.create({
+        data: {
+          orderId: order.id,
+          userId: session.user.id,
+          deviceId: device.id,
+          genTitle: title,
+          genDescription: description,
+          imageUrls: order.imageUrls,
+          status: "PENDIENTE",
+        },
+      });
+
+      await tx.device.update({
+        where: { id: device.id },
+        data: { status: "OCUPADO" },
+      });
+    }
+  });
+
+  revalidatePath("/dashboard/generations");
+  revalidatePath("/dashboard/orders");
+  return { success: true, countAdded: assignCount, missingCount: missingCount - assignCount };
 }

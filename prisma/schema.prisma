@@ -101,6 +101,9 @@ model Device {
   personName      String?
   label           String?
   triggerId       String?
+  alias           String?
+  estadoDb        String?
+  redesSociales   Json?
   status          DeviceStatus     @default(LIBRE)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -218,6 +221,7 @@ enum DeviceStatus {
   OCUPADO
   LIBRE
   BLOQUEADO
+  SIN_CUENTAS
 }
 
 enum Currency {

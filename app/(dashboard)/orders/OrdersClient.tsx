@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { getOrdersByProject, updateBotOrder, sendOrderToBots, createBotOrder, cancelBotOrder, deleteBotOrder } from "@/lib/actions/orders"
 import { getProjects } from "@/lib/actions/projects"
-import { improveTitle, improveDescription, generateProductImage, improveProductImage, analyzeVehicleImage, analyzeImageSecurity, type ImproveType } from "@/lib/actions/ai"
+import { improveTitle, improveDescription, generateProductImage, improveProductImage, analyzeVehicleImage, analyzeProductImage, type ImproveType } from "@/lib/actions/ai"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -242,6 +242,46 @@ export default function OrdersClient() {
     }
   }
 
+  const handleAutoDetectProduct = async (imageInput: File | string) => {
+    try {
+      setAiLoading("image");
+      toast.info("Analizando producto con IA...");
+
+      let imageSource: string;
+      if (typeof imageInput === "string") {
+        // Ya es una URL — la IA la descarga desde el servidor
+        imageSource = imageInput;
+      } else {
+        // Es un File local — convertir a base64 data URL
+        imageSource = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(imageInput);
+        });
+      }
+
+      const analysis = await analyzeProductImage(imageSource);
+      if (analysis) {
+        setEditForm((prev: any) => ({
+          ...prev,
+          listingTitle: analysis.listingTitle || prev.listingTitle,
+          listingDescription: analysis.listingDescription || prev.listingDescription,
+          listingCategory: analysis.listingCategory || prev.listingCategory,
+          listingCondition: analysis.listingCondition || prev.listingCondition,
+        }));
+        toast.success("¡Producto detectado!", { description: "Revisa y ajusta los datos generados." });
+      } else {
+        toast.error("No se pudo detectar el producto. Intenta con otra imagen.");
+      }
+    } catch (error) {
+      console.error("Error auto-detecting product:", error);
+      toast.error("Error al analizar la imagen.");
+    } finally {
+      setAiLoading(null);
+    }
+  }
+
   const handleAutoDetectVehicle = async (file: File) => {
     try {
       setAiLoading("image");
@@ -335,20 +375,6 @@ export default function OrdersClient() {
     try {
       setAiLoading("image")
       const url = await generateProductImage(editForm.listingTitle, editForm.listingDescription || "")
-      
-      // Validar seguridad de la imagen generada
-      setIsVerifyingImage(true);
-      const security = await analyzeImageSecurity(url);
-      if (!security.safe) {
-        toast.error("Imagen generada rechazada", { 
-          description: security.reason || "La IA incluyó accidentalmente texto o QR prohibido. Intenta nuevamente.",
-          duration: 6000
-        });
-        setIsVerifyingImage(false);
-        return;
-      }
-      setIsVerifyingImage(false);
-
       setEditForm((prev: any) => ({
         ...prev,
         imageUrls: [...(prev.imageUrls || []), url]
@@ -393,19 +419,6 @@ export default function OrdersClient() {
         type
       );
 
-      // Validar seguridad de la imagen mejorada
-      setIsVerifyingImage(true);
-      const security = await analyzeImageSecurity(improvedUrl);
-      if (!security.safe) {
-        toast.error("Mejora rechazada", { 
-          description: security.reason || "La IA añadió accidentalmente texto o QR prohibido. Intenta con otro estilo.",
-          duration: 6000
-        });
-        setIsVerifyingImage(false);
-        return;
-      }
-      setIsVerifyingImage(false);
-
       setEditForm((prev: any) => ({
         ...prev,
         imageUrls: [...(prev.imageUrls || []), improvedUrl],
@@ -421,8 +434,6 @@ export default function OrdersClient() {
     }
   }
 
-  const [draggedBotIndex, setDraggedBotIndex] = useState<number | null>(null)
-
   const handleDragStart = (idx: number) => {
     setDraggedImageIndex(idx);
   };
@@ -434,15 +445,12 @@ export default function OrdersClient() {
   const handleDropImage = (idx: number) => {
     if (draggedImageIndex === null) return;
     
-    // Obtenemos el array actual de imágenes mezcladas
     const currentImages = [...editingMixedImages];
     const draggedItem = currentImages[draggedImageIndex];
     
-    // Reordenamos
     currentImages.splice(draggedImageIndex, 1);
     currentImages.splice(idx, 0, draggedItem);
     
-    // Clasificamos de nuevo en URLs y Archivos para el estado
     const newUrls: string[] = [];
     const newFiles: File[] = [];
     
@@ -458,82 +466,9 @@ export default function OrdersClient() {
     setDraggedImageIndex(null);
   };
 
-  const handleDragBotStart = (idx: number) => {
-    setDraggedBotIndex(idx);
-  };
-
-  const handleDropBot = (idx: number) => {
-    if (draggedBotIndex === null) return;
-    
-    const current = [...(editForm.selectedDeviceIds || [])];
-    const item = current[draggedBotIndex];
-    current.splice(draggedBotIndex, 1);
-    current.splice(idx, 0, item);
-    
-    setEditForm({ ...editForm, selectedDeviceIds: current });
-    setDraggedBotIndex(null);
-  };
-
-  const setAsPrimaryBot = (botId: string) => {
-    const current = [...(editForm.selectedDeviceIds || [])];
-    if (current[0] === botId) return;
-    const filtered = current.filter(id => id !== botId);
-    setEditForm({ ...editForm, selectedDeviceIds: [botId, ...filtered] });
-    toast.success("Bot Principal actualizado", { position: "bottom-center" });
-  };
-
-  const toggleBotSelection = (botId: string) => {
-    const current = editForm.selectedDeviceIds || [];
-    const updated = current.includes(botId) 
-      ? current.filter((id: string) => id !== botId)
-      : [...current, botId];
-    
-    setEditForm({ 
-      ...editForm, 
-      selectedDeviceIds: updated,
-      quantity: updated.length
-    });
-  };
-
-  const handleRandomSelect = (count: number) => {
-    const available = allDevices.filter(d => d.status === 'LIBRE');
-    const shuffled = [...available].sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, count).map(d => d.id);
-    
-    setEditForm({
-      ...editForm,
-      selectedDeviceIds: selected,
-      quantity: selected.length
-    });
-  };
-
-  const syncBotsWithQuantity = (count: number, current: string[]) => {
-    if (count === current.length) return current;
-    if (count < current.length) return current.slice(0, count);
-    
-    // Necesitamos añadir más bots
-    const available = allDevices.filter(d => d.status === 'LIBRE' && !current.includes(d.id));
-    const needed = count - current.length;
-    const shuffled = [...available].sort(() => 0.5 - Math.random());
-    const added = shuffled.slice(0, needed).map(d => d.id);
-    
-    if (added.length < needed) {
-      toast.warning(`Solo hay ${current.length + added.length} bots disponibles.`);
-    }
-    
-    return [...current, ...added];
-  };
-
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value) || 0;
-    const currentSelected = editForm.selectedDeviceIds || [];
-    const next = syncBotsWithQuantity(val, currentSelected);
-    
-    setEditForm({ 
-      ...editForm, 
-      quantity: next.length, 
-      selectedDeviceIds: next 
-    });
+    const val = Math.max(1, parseInt(e.target.value) || 1);
+    setEditForm({ ...editForm, quantity: val });
   };
 
   const handleSave = async () => {
@@ -1078,9 +1013,7 @@ export default function OrdersClient() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl px-4">
                     <button onClick={() => { 
-                      const q = 1;
-                      const nextBots = syncBotsWithQuantity(q, []);
-                      setEditForm({...editForm, listingType: "ARTICULO", listingCategory: "VARIOS", quantity: nextBots.length, selectedDeviceIds: nextBots}); 
+                      setEditForm({...editForm, listingType: "ARTICULO", listingCategory: "VARIOS", quantity: 1}); 
                       setCreationStep("FORM"); 
                     }} className="group p-6 md:p-8 border border-border bg-muted/20 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-center flex flex-col items-center gap-4 cursor-pointer relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity"><Box className="size-16 translate-x-4 -translate-y-4" /></div>
@@ -1088,9 +1021,7 @@ export default function OrdersClient() {
                       <div className="space-y-1 z-10"><h4 className="text-xs font-black uppercase tracking-widest">Artículos</h4><p className="text-[8px] md:text-[9px] text-muted-foreground uppercase font-medium">Ropa, Electrónica, Hogar...</p></div>
                     </button>
                     <button onClick={() => { 
-                      const q = 1;
-                      const nextBots = syncBotsWithQuantity(q, []);
-                      setEditForm({...editForm, listingType: "VEHICULO", listingCategory: "AUTOS_Y_CAMIONETAS", quantity: nextBots.length, selectedDeviceIds: nextBots}); 
+                      setEditForm({...editForm, listingType: "VEHICULO", listingCategory: "AUTOS_Y_CAMIONETAS", quantity: 1}); 
                       setCreationStep("FORM"); 
                     }} className="group p-6 md:p-8 border border-border bg-muted/20 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all text-center flex flex-col items-center gap-4 cursor-pointer relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity"><Car className="size-16 translate-x-4 -translate-y-4" /></div>
@@ -1098,9 +1029,7 @@ export default function OrdersClient() {
                       <div className="space-y-1 z-10"><h4 className="text-xs font-black uppercase tracking-widest">Vehículos</h4><p className="text-[8px] md:text-[9px] text-muted-foreground uppercase font-medium">Autos, Motos, Camiones...</p></div>
                     </button>
                     <button onClick={() => { 
-                      const q = 1;
-                      const nextBots = syncBotsWithQuantity(q, []);
-                      setEditForm({...editForm, listingType: "PROPIEDAD", listingCategory: "ALQUILER_PROPIEDADES", quantity: nextBots.length, selectedDeviceIds: nextBots}); 
+                      setEditForm({...editForm, listingType: "PROPIEDAD", listingCategory: "ALQUILER_PROPIEDADES", quantity: 1}); 
                       setCreationStep("FORM"); 
                     }} className="group p-6 md:p-8 border border-border bg-muted/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all text-center flex flex-col items-center gap-4 cursor-pointer relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity"><Home className="size-16 translate-x-4 -translate-y-4" /></div>
@@ -1172,6 +1101,15 @@ export default function OrdersClient() {
                          {aiLoading === "image" ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />} Detectar Características con IA
                       </button>
                     )}
+                    {editForm.listingType === "ARTICULO" && editingMixedImages.length > 0 && (
+                      <button 
+                        onClick={() => handleAutoDetectProduct(editingMixedImages[activeImageIndex])}
+                        className="w-full mt-2 h-10 border border-blue-500/30 bg-blue-500/5 text-[9px] font-black uppercase text-blue-500 hover:bg-blue-500/10 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        disabled={aiLoading === "image"}
+                      >
+                        {aiLoading === "image" ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />} Detectar Producto con IA
+                      </button>
+                    )}
                     <button 
                       onClick={() => setCreationStep("CHOICE")} 
                       className="mt-6 flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground/60 hover:text-blue-500 transition-all cursor-pointer group py-2"
@@ -1224,165 +1162,30 @@ export default function OrdersClient() {
                             </div>
                           </div>
                         </div>
-                                                 <div className="md:col-span-2 space-y-4">
-                           <Collapsible defaultOpen={true}>
-                             <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-border pb-3">
+                          <div className="md:col-span-2 space-y-4">
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-4 border border-border p-4 bg-muted/5">
                               <div className="flex items-center gap-4">
                                 <div className="size-10 bg-blue-600/10 flex items-center justify-center border border-blue-500/20"><Bot className="size-5 text-blue-500" /></div>
                                 <div className="flex flex-col">
-                                   <Label className="text-[14px] font-black uppercase tracking-widest text-foreground">Bots</Label>
+                                   <Label className="text-[14px] font-black uppercase tracking-widest text-foreground">Cantidad de Bots</Label>
                                    <div className="flex items-center gap-1.5">
                                       <span className="size-1.5 rounded-full bg-green-500 animate-pulse" />
-                                      <span className="text-[8px] font-bold text-muted-foreground uppercase">Sistema Activo</span>
+                                      <span className="text-[8px] font-bold text-muted-foreground uppercase">Asignación Automática</span>
                                    </div>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-3 w-full md:w-auto">
-                                 <div className="relative group">
-                                   <Input 
-                                     type="number" 
-                                     className="h-10 w-20 bg-muted/20 border-2 border-blue-600/30 text-lg font-black text-center focus:ring-0 focus:border-blue-500 transition-all rounded-none" 
-                                     value={editForm.quantity} 
-                                     onChange={handleQuantityChange}
-                                     min={0}
-                                   />
-                                   <div className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white size-3.5 flex items-center justify-center text-[7px] font-black rounded-none shadow-lg">#</div>
-                                 </div>
-                                 <div className="h-8 w-px bg-border mx-1" />
-                                 <button 
-                                   onClick={() => setIsBotSelectorOpen(true)}
-                                   className="h-10 px-4 bg-muted/20 hover:bg-muted text-[9px] font-black uppercase tracking-widest border border-border flex items-center gap-2 transition-all active:scale-95"
-                                 >
-                                   Personalizar <Filter className="size-3" />
-                                 </button>
-                                 <CollapsibleTrigger asChild>
-                                   <button className="h-10 px-3 bg-muted/20 hover:bg-muted border border-border transition-all group flex items-center gap-2">
-                                     <span className="text-[9px] font-black uppercase tracking-widest">Ver</span>
-                                     <ChevronDown className="size-3 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform" />
-                                   </button>
-                                 </CollapsibleTrigger>
+                              <div className="relative group">
+                                <Input 
+                                  type="number" 
+                                  className="h-12 w-24 bg-muted/20 border-2 border-blue-600/30 text-xl font-black text-center focus:ring-0 focus:border-blue-500 transition-all rounded-none" 
+                                  value={editForm.quantity} 
+                                  onChange={handleQuantityChange}
+                                  min={1}
+                                />
+                                <div className="absolute -top-2 -right-2 bg-blue-600 text-white size-5 flex items-center justify-center text-[10px] font-black rounded-none shadow-lg">#</div>
                               </div>
-                           </div>
-
-                             <CollapsibleContent className="animate-in fade-in slide-in-from-top-2 duration-300">
-                               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                                 <AnimatePresence mode="popLayout">
-                                   {(editForm.selectedDeviceIds || []).map((botId: string, idx: number) => {
-                                     const bot = allDevices.find(d => d.id === botId);
-                                     if (!bot) return null;
-                                     return (
-                                       <motion.div 
-                                         layout
-                                         key={botId}
-                                         initial={{ opacity: 0, scale: 0.8 }}
-                                         animate={{ opacity: 1, scale: 1 }}
-                                         exit={{ opacity: 0, scale: 0.8 }}
-                                         transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                                         draggable
-                                         onDragStart={() => handleDragBotStart(idx)}
-                                         onDragOver={handleDragOver}
-                                         onDrop={() => handleDropBot(idx)}
-                                         className={`relative p-2 border flex flex-col justify-between transition-all cursor-move group h-24 ${idx === 0 ? 'border-amber-500 bg-amber-500/5 ring-1 ring-amber-500/30' : 'bg-muted/5 border-border hover:bg-muted/10'}`}
-                                       >
-                                          <div className="flex items-start justify-between">
-                                             <div className="flex items-center gap-1">
-                                                <span className="text-[7px] font-black text-muted-foreground/40 group-hover:text-amber-500">#{idx + 1}</span>
-                                                {idx === 0 && <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />}
-                                             </div>
-                                          </div>
-                                          <div className="flex flex-col">
-                                             <span className={`text-[8px] font-black uppercase truncate ${idx === 0 ? 'text-amber-600' : 'text-foreground'}`}>{bot.label || bot.model || "Bot"}</span>
-                                             <span className="text-[7px] font-bold text-muted-foreground truncate opacity-60 mt-0.5">{bot.serial}</span>
-                                          </div>
-                                          {idx === 0 && (
-                                            <div className="absolute bottom-1 right-1 flex items-center gap-1 bg-amber-600 text-white text-[6px] font-black uppercase px-2 py-0.5 shadow-lg animate-in zoom-in-50 duration-300">
-                                              <Sparkles className="size-2" /> Principal
-                                            </div>
-                                          )}
-                                       </motion.div>
-                                     );
-                                   })}
-                                 </AnimatePresence>
-                                 
-                                 {(editForm.selectedDeviceIds || []).length === 0 && (
-                                   <div className="col-span-full border border-dashed border-border/50 bg-muted/5 flex items-center justify-center p-6 text-center opacity-30">
-                                     <p className="text-[8px] font-black uppercase tracking-[0.2em]">Automático ({editForm.quantity} bots)</p>
-                                   </div>
-                                 )}
-                               </div>
-                             </CollapsibleContent>
-                           </Collapsible>
-
-                           {/* SELECTOR COMPACTO */}
-                           {isBotSelectorOpen && (
-                             <div className="absolute inset-0 bg-background z-[200] flex flex-col animate-in fade-in zoom-in-95 duration-300">
-                               <div className="flex items-center justify-between p-4 border-b border-border bg-card shrink-0 shadow-sm">
-                                  <div className="flex flex-col gap-0.5">
-                                     <div className="flex items-center gap-2">
-                                       <Bot className="size-4 text-blue-500" />
-                                       <p className="text-[10px] font-black uppercase tracking-widest">Orquestador de Dispositivos</p>
-                                     </div>
-                                     <div className="flex items-center gap-2">
-                                        <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter bg-muted px-1.5 py-0.5 border border-border">
-                                          {editForm.selectedDeviceIds?.length || 0} Seleccionados
-                                        </span>
-                                        <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                          de {allDevices.filter(d => d.status === 'LIBRE' || (editForm.selectedDeviceIds || []).includes(d.id)).length} Disponibles
-                                        </span>
-                                     </div>
-                                  </div>
-                                  <button 
-                                    onClick={() => setIsBotSelectorOpen(false)}
-                                    className="px-4 py-2 bg-foreground text-background text-[10px] font-black uppercase tracking-widest active:scale-95 hover:bg-blue-600 hover:text-white transition-all shadow-lg"
-                                  >
-                                    Cerrar
-                                  </button>
-                               </div>
-
-                               <div className="flex-1 p-6 overflow-y-auto custom-scrollbar bg-muted/5">
-                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                   {allDevices.map((bot, bIdx) => {
-                                     const isSelected = (editForm.selectedDeviceIds || []).includes(bot.id);
-                                     const isAvailable = bot.status === 'LIBRE';
-                                     return (
-                                       <button
-                                         key={bot.id}
-                                         onClick={() => toggleBotSelection(bot.id)}
-                                         disabled={!isAvailable && !isSelected}
-                                         className={`flex items-center gap-3 p-3 border transition-all relative overflow-hidden group ${
-                                           isSelected
-                                             ? 'border-blue-600 bg-blue-600/10 ring-1 ring-blue-600/30'
-                                             : isAvailable 
-                                               ? 'border-border bg-white/5 hover:border-blue-500/30 hover:bg-muted/10' 
-                                               : 'border-border/10 opacity-30 cursor-not-allowed bg-black/5'
-                                         }`}
-                                       >
-                                         <div className={`size-8 flex items-center justify-center shrink-0 border ${isSelected ? 'border-blue-500/40 bg-blue-500/10' : 'border-border bg-muted/20'}`}>
-                                            {isSelected ? <CheckCircle2 className="size-4 text-blue-500" /> : <Bot className={`size-4 ${isAvailable ? 'text-muted-foreground/40' : 'text-red-500/20'}`} />}
-                                         </div>
-                                         <div className="flex flex-col items-start min-w-0 flex-1">
-                                            <span className={`text-[9px] font-black uppercase truncate w-full tracking-tight ${isSelected ? 'text-blue-500' : ''}`}>{bot.label || bot.model || "Terminal Bot"}</span>
-                                            <div className="flex items-center gap-1.5">
-                                              <span className={`size-1.5 rounded-full ${isAvailable ? 'bg-green-500' : isSelected ? 'bg-blue-500' : 'bg-red-500'}`} />
-                                              <span className="text-[7px] text-muted-foreground/60 font-mono truncate uppercase">{bot.serial}</span>
-                                            </div>
-                                         </div>
-                                         <span className="absolute top-1 right-1 text-[7px] font-bold text-muted-foreground/10 group-hover:text-muted-foreground/30 transition-colors">#{bIdx + 1}</span>
-                                       </button>
-                                     );
-                                   })}
-                                 </div>
-                               </div>
-                               
-                               <div className="p-4 border-t border-border bg-card flex items-center justify-between shrink-0">
-                                  <button onClick={() => setEditForm({...editForm, selectedDeviceIds: [], quantity: 0})} className="text-[8px] font-black uppercase text-red-500 hover:bg-red-500/5 px-3 py-1.5 transition-colors border border-red-500/10">Vaciar</button>
-                                  <div className="flex items-center gap-2">
-                                     <button onClick={() => setIsBotSelectorOpen(false)} className="px-6 py-2 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest active:scale-95 shadow-lg shadow-blue-600/20">Confirmar</button>
-                                  </div>
-                               </div>
-                             </div>
-                           )}
-                         </div>
+                            </div>
+                          </div>
                       </div>
 
                       {/* CAMPOS DINÁMICOS SEGÚN TIPO */}
@@ -1708,145 +1511,22 @@ export default function OrdersClient() {
                              </div>
 
                              <div className="md:col-span-2 space-y-4">
-                               <Collapsible defaultOpen={true}>
-                                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-border pb-3 mb-4">
-                                    <div className="flex items-center gap-3">
-                                       <div className="size-8 bg-blue-500/10 flex items-center justify-center border border-blue-500/20"><Bot className="size-4 text-blue-500" /></div>
-                                       <Label className="text-[12px] font-black uppercase tracking-widest">Bots</Label>
-                                    </div>
-                                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                                       <Input 
-                                         type="number" 
-                                         className="h-9 w-16 bg-muted/20 border-2 border-blue-600/20 text-md font-black text-center rounded-none" 
-                                         value={editForm.quantity} 
-                                         onChange={handleQuantityChange}
-                                         min={0}
-                                       />
-                                       <button 
-                                         onClick={() => setIsBotSelectorOpen(true)}
-                                         className="h-9 px-3 border border-border bg-muted/10 hover:bg-muted text-[8px] font-black uppercase tracking-tight flex items-center gap-1.5 transition-all"
-                                       >
-                                         Personalizar <Filter className="size-3" />
-                                       </button>
-                                       <CollapsibleTrigger asChild>
-                                         <button className="h-9 px-2 border border-border bg-muted/10 hover:bg-muted transition-all group">
-                                           <ChevronDown className="size-3 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform" />
-                                         </button>
-                                       </CollapsibleTrigger>
-                                    </div>
-                                 </div>
-
-                                 <CollapsibleContent className="animate-in fade-in slide-in-from-top-1 duration-300">
-                                   <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                                     <AnimatePresence mode="popLayout">
-                                       {(editForm.selectedDeviceIds || []).map((botId: string, idx: number) => {
-                                         const bot = allDevices.find(d => d.id === botId);
-                                         if (!bot) return null;
-                                         return (
-                                           <motion.div 
-                                             layout
-                                             key={botId}
-                                             initial={{ opacity: 0, scale: 0.8 }}
-                                             animate={{ opacity: 1, scale: 1 }}
-                                             exit={{ opacity: 0, scale: 0.8 }}
-                                             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                                             draggable
-                                             onDragStart={() => handleDragBotStart(idx)}
-                                             onDragOver={handleDragOver}
-                                             onDrop={() => handleDropBot(idx)}
-                                             className={`relative p-2 border flex flex-col justify-between transition-all cursor-move group h-20 ${idx === 0 ? 'border-amber-500 bg-amber-500/5 shadow-sm ring-1 ring-amber-500/20' : 'bg-muted/5 border-border hover:bg-muted/10'}`}
-                                           >
-                                              <div className="flex items-start justify-between">
-                                                 <span className="text-[6px] font-black text-muted-foreground/30">#{idx + 1}</span>
-                                              </div>
-                                              <div className="flex flex-col">
-                                                 <span className={`text-[8px] font-black uppercase truncate ${idx === 0 ? 'text-amber-600' : 'text-foreground'}`}>{bot.label || bot.model || "Bot"}</span>
-                                                 <span className="text-[6px] text-muted-foreground truncate opacity-50">{bot.serial}</span>
-                                              </div>
-                                              {idx === 0 && <div className="absolute top-1 right-1 flex items-center gap-0.5 text-[5px] font-black uppercase bg-amber-600 text-white px-1 py-0.5 shadow-md"><Sparkles className="size-1.5 mr-0.5" /> Principal</div>}
-                                           </motion.div>
-                                         );
-                                       })}
-                                     </AnimatePresence>
-                                   </div>
-                                 </CollapsibleContent>
-                               </Collapsible>
-
-                                 {/* SELECTOR INTERNO (EDICIÓN COMPACTO) */}
-                                 {isBotSelectorOpen && (
-                                   <div className="absolute inset-0 bg-background z-[200] flex flex-col animate-in fade-in zoom-in-95 duration-300 text-foreground">
-                                     <div className="p-4 border-b border-border flex items-center justify-between bg-card shrink-0 shadow-sm">
-                                        <div className="flex flex-col gap-0.5">
-                                           <div className="flex items-center gap-2">
-                                             <Bot className="size-4 text-blue-500" />
-                                             <p className="text-[10px] font-black uppercase tracking-widest">Orquestador de Dispositivos</p>
-                                           </div>
-                                           <div className="flex items-center gap-2">
-                                              <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter bg-muted px-1.5 py-0.5 border border-border">
-                                                {editForm.selectedDeviceIds?.length || 0} Seleccionados
-                                              </span>
-                                              <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                                de {allDevices.filter(d => d.status === 'LIBRE' || (editForm.selectedDeviceIds || []).includes(d.id)).length} Disponibles
-                                              </span>
-                                           </div>
-                                        </div>
-                                        <button onClick={() => setIsBotSelectorOpen(false)} className="p-2 border border-border hover:bg-blue-600 hover:text-white transition-all active:scale-90"><X className="size-4" /></button>
+                               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border border-border p-4 mb-4 bg-muted/5">
+                                  <div className="flex items-center gap-3">
+                                     <div className="size-8 bg-blue-500/10 flex items-center justify-center border border-blue-500/20"><Bot className="size-4 text-blue-500" /></div>
+                                     <div className="flex flex-col">
+                                       <Label className="text-[12px] font-black uppercase tracking-widest">Cantidad de Bots</Label>
+                                       <span className="text-[8px] font-bold text-muted-foreground uppercase">Asignación Automática</span>
                                      </div>
-                                     <div className="flex-1 p-6 overflow-y-auto custom-scrollbar bg-muted/5">
-                                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                         {allDevices.map((bot, bIdx) => {
-                                           const isSelected = (editForm.selectedDeviceIds || []).includes(bot.id);
-                                           const isAvailable = bot.status === 'LIBRE';
-                                           return (
-                                             <button
-                                               key={bot.id}
-                                               onClick={() => toggleBotSelection(bot.id)}
-                                               disabled={!isAvailable && !isSelected}
-                                               className={`flex items-center gap-3 p-3 border transition-all relative overflow-hidden group ${
-                                                 isSelected
-                                                   ? 'border-blue-600 bg-blue-600/10 ring-1 ring-blue-600/30'
-                                                   : isAvailable ? 'border-border bg-white/5 hover:border-blue-500/30 hover:bg-muted/10' : 'opacity-30 cursor-not-allowed bg-black/5'
-                                               }`}
-                                             >
-                                               <div className={`size-8 flex items-center justify-center shrink-0 border transition-all ${isSelected ? (editForm.selectedDeviceIds?.[0] === bot.id ? 'border-amber-500 bg-amber-500/20' : 'border-blue-500/40 bg-blue-500/10') : 'border-border bg-muted/20'}`}>
-                                                  {isSelected ? (
-                                                    editForm.selectedDeviceIds?.[0] === bot.id 
-                                                      ? <Sparkles className="size-4 text-amber-500 animate-pulse" /> 
-                                                      : <CheckCircle2 className="size-4 text-blue-500" />
-                                                  ) : (
-                                                    <Bot className={`size-4 ${isAvailable ? 'text-muted-foreground/40' : 'text-red-500/20'}`} />
-                                                  )}
-                                               </div>
-                                               <div className="flex flex-col items-start min-w-0 flex-1">
-                                                  <div className="flex items-center gap-1.5 w-full">
-                                                    <span className={`text-[9px] font-black uppercase truncate tracking-tight ${isSelected ? (editForm.selectedDeviceIds?.[0] === bot.id ? 'text-amber-500' : 'text-blue-500') : ''}`}>{bot.label || bot.model || "Bot"}</span>
-                                                    {editForm.selectedDeviceIds?.[0] === bot.id && <span className="text-[6px] font-bold bg-amber-500 text-white px-1 py-0.5 uppercase tracking-tighter shrink-0">Main</span>}
-                                                  </div>
-                                                  <div className="flex items-center gap-1.5">
-                                                    <span className={`size-1.5 rounded-full ${isAvailable ? 'bg-green-500' : isSelected ? (editForm.selectedDeviceIds?.[0] === bot.id ? 'bg-amber-500' : 'bg-blue-500') : 'bg-red-500'}`} />
-                                                    <span className="text-[7px] text-muted-foreground/60 font-mono truncate uppercase">{bot.serial}</span>
-                                                  </div>
-                                               </div>
-                                               {isSelected && (
-                                                 <button 
-                                                   onClick={(e) => { e.stopPropagation(); setAsPrimaryBot(bot.id); }}
-                                                   className={`p-1.5 transition-all ${editForm.selectedDeviceIds?.[0] === bot.id ? 'text-amber-500 cursor-default' : 'text-muted-foreground/20 hover:text-blue-500 hover:bg-blue-500/10'}`}
-                                                 >
-                                                   <Sparkles className={`size-3 ${editForm.selectedDeviceIds?.[0] === bot.id ? 'fill-current' : ''}`} />
-                                                 </button>
-                                               )}
-                                               <span className="absolute top-1 right-1 text-[7px] font-bold text-muted-foreground/10 group-hover:text-muted-foreground/30 transition-colors">#{bIdx + 1}</span>
-                                             </button>
-                                           );
-                                         })}
-                                       </div>
-                                     </div>
-                                     <div className="p-4 border-t border-border flex justify-end bg-card shrink-0">
-                                        <button onClick={() => setIsBotSelectorOpen(false)} className="px-8 py-2.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-[0.2em] active:scale-95 shadow-xl shadow-blue-600/20">Confirmar</button>
-                                     </div>
-                                   </div>
-                                 )}
-                               
+                                  </div>
+                                  <Input 
+                                    type="number" 
+                                    className="h-10 w-24 bg-muted/20 border-2 border-blue-600/20 text-lg font-black text-center rounded-none" 
+                                    value={editForm.quantity} 
+                                    onChange={handleQuantityChange}
+                                    min={1}
+                                  />
+                               </div>
                              </div>
                            </div>
                           {editForm.listingType === "VEHICULO" && (

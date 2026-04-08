@@ -32,7 +32,7 @@ import {
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { updateGenMarketplace, deleteGenMarketplace, updateBotOrderStatus } from "@/lib/actions/generations";
-import { cancelBotOrder, deleteBotOrder } from "@/lib/actions/orders";
+import { cancelBotOrder, deleteBotOrder, retryMissingBots } from "@/lib/actions/orders";
 import { toast } from "sonner";
 import { useProjectStore } from "@/hooks/use-project-store";
 import { useRouter } from "next/navigation";
@@ -185,6 +185,21 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
     }
   };
 
+  const handleRetryMissingBots = async (orderId: string) => {
+    try {
+      setOrderActionLoading(orderId);
+      const res = await retryMissingBots(orderId);
+      if (res.success) {
+        toast.success(`Se agregaron ${res.countAdded} bots faltantes. ${res.missingCount > 0 ? `Aún faltan ${res.missingCount}.` : 'Orden completa.'}`);
+        router.refresh();
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Error al solicitar reintento");
+    } finally {
+      setOrderActionLoading(null);
+    }
+  };
+
   const handleDeleteGen = async (id: number) => {
     if (!confirm("¿Eliminar ejecución específica?")) return;
     try {
@@ -298,6 +313,17 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                   ) : order.status === "PAUSADA" ? (
                     <button onClick={() => handleChangeOrderStatus(order.id, "LISTA")} className="h-10 px-5 bg-green-600 hover:bg-green-500 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer"><Play className="size-4 fill-current" /> Reanudar</button>
                   ) : null}
+                  
+                  {order.quantity > gens.length && (
+                    <button 
+                      onClick={() => handleRetryMissingBots(order.id)} 
+                      disabled={orderActionLoading === order.id}
+                      className="h-10 px-5 bg-blue-600 text-white hover:bg-blue-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-600/20"
+                    >
+                      {orderActionLoading === order.id ? <RefreshCw className="size-4 animate-spin" /> : <RefreshCw className="size-4" />} Reintentar Faltantes ({order.quantity - gens.length})
+                    </button>
+                  )}
+
                   <button onClick={() => handleCancelOrder(order.id)} disabled={order.status === "CANCELADA"} className="h-10 px-5 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer"><Ban className="size-4" /> Cancelar Todo</button>
                   <button onClick={() => handleDeleteOrder(order.id)} className="h-10 w-10 border border-border flex items-center justify-center hover:bg-red-500 hover:text-white transition-all cursor-pointer"><Trash2 className="size-4" /></button>
                 </div>

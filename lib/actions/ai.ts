@@ -172,6 +172,68 @@ export async function analyzeImageSecurity(imageSource: string): Promise<{ safe:
   }
 }
 
+// ─── ANALIZAR IMAGEN DE PRODUCTO GENERAL ───────────────────────
+export async function analyzeProductImage(imageSource: string): Promise<any> {
+  const apiKey = getApiKey();
+
+  const prompt = `Analiza esta imagen de un producto y extrae información para una publicación de Facebook Marketplace en Latinoamérica.
+  Responde EXCLUSIVAMENTE con un objeto JSON (sin markdown, sin backticks, sin caracteres extra) con esta estructura:
+  {
+    "listingTitle": "Título atractivo y directo del producto en español (máx 100 caracteres)",
+    "listingDescription": "Descripción detallada en español: qué es, características visibles, estado aparente, material, color, tamaño si aplica (máx 400 caracteres)",
+    "listingCategory": "Una de: ELECTRONICA | ROPA_Y_ACCESORIOS | HOGAR_Y_JARDIN | JUGUETES_Y_JUEGOS | DEPORTES | INSTRUMENTOS_MUSICALES | MUEBLES | ELECTRODOMESTICOS | VARIOS",
+    "listingCondition": "Una de: NUEVO | USADO_COMO_NUEVO | USADO_BUENO | USADO_REGULAR"
+  }
+  
+  Reglas:
+  1. TODO el texto debe estar en ESPAÑOL.
+  2. PROHIBIDO incluir números de teléfono, precios, WhatsApp o datos de contacto.
+  3. El título debe ser claro y específico: "Samsung Galaxy A54 128GB Negro" en lugar de "Teléfono".
+  4. Si el producto se ve nuevo en el empaque, usa "NUEVO". Si tiene uso visible, usa "USADO_BUENO".
+  5. Sé específico con la categoría basándote en lo que ves en la imagen.`;
+
+  let imageContent: Record<string, unknown>;
+
+  if (imageSource.startsWith("data:")) {
+    imageContent = { type: "image_url", image_url: { url: imageSource } };
+  } else {
+    const imgRes = await fetch(imageSource);
+    const arrayBuffer = await imgRes.arrayBuffer();
+    const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    imageContent = { type: "image_url", image_url: { url: `data:${contentType};base64,${base64}` } };
+  }
+
+  try {
+    const res = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.0-flash-001",
+        messages: [{
+          role: "user",
+          content: [{ type: "text", text: prompt }, imageContent],
+        }],
+        max_tokens: 500,
+        temperature: 0.2,
+      }),
+    });
+
+    if (!res.ok) throw new Error("Error analizando imagen con IA");
+
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content?.trim() || "{}";
+    const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error("Error en analyzeProductImage:", error);
+    return null;
+  }
+}
+
 // ─── ANALIZAR IMAGEN DE VEHÍCULO ───────────────────────────────
 export async function analyzeVehicleImage(imageSource: string): Promise<any> {
   const apiKey = getApiKey();
