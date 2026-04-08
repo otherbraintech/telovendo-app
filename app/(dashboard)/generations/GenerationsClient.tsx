@@ -26,7 +26,8 @@ import {
   Eye,
   ShoppingCart,
   DollarSign,
-  Tag
+  Tag,
+  Bot
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -53,12 +54,21 @@ interface Generation {
     orderName: string;
     status: string;
     listingType?: string;
+    listingPrice?: any;
+    listingCurrency?: string;
+    listingCategory?: string;
+    listingCondition?: string;
   };
   device: {
     serial: string;
     personName: string | null;
   } | null;
 }
+
+const formatPrice = (price: any) => {
+  const num = Number(price?.$numberDecimal || price) || 0;
+  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+};
 
 const statusLabel: Record<string, string> = {
   LISTA: "LISTA PARA BOT",
@@ -79,6 +89,7 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
   const [saving, setSaving] = useState<number | null>(null);
   const [orderActionLoading, setOrderActionLoading] = useState<string | null>(null);
   const [viewingSpecsOrder, setViewingSpecsOrder] = useState<any | null>(null);
+  const [viewingGen, setViewingGen] = useState<Generation | null>(null);
   const { setActiveOrderName } = useProjectStore();
   const router = useRouter();
 
@@ -348,8 +359,15 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                                <div className="flex flex-col items-end gap-1.5 opacity-40 group-hover/row:opacity-100 transition-opacity">
                                   <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-tighter"><CalendarDays className="size-3 text-blue-500" /> GENERADA: {format(new Date(gen.createdAt), "dd/MM HH:mm", { locale: es })}</div>
                                   <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-tighter"><Timer className="size-3 text-amber-500" /> ACTUALIZADA: {format(new Date(gen.updatedAt), "dd/MM HH:mm", { locale: es })}</div>
-                               </div>
-                                <div className="flex items-center justify-end gap-1.5">
+                                                   <div className="flex items-center justify-end gap-1.5">
+                                    <button 
+                                      onClick={() => setViewingGen(gen)}
+                                      className="size-9 flex items-center justify-center bg-blue-600/10 border border-blue-500/20 text-blue-500 hover:bg-blue-600 hover:text-white transition-all cursor-pointer group/eye"
+                                      title="Ver Detalles de Ejecución"
+                                    >
+                                      <Eye className="size-4 group-hover/eye:scale-110 transition-transform" />
+                                    </button>
+
                                    {(gen.status === "PENDIENTE" || gen.status === "PUBLICADO") ? (
                                      <button onClick={async () => {
                                        await updateGenMarketplace(gen.id, { status: "PAUSADO" });
@@ -372,7 +390,7 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                                       <Edit className="size-4"/>
                                     </button>
                                    <button onClick={() => handleDeleteGen(gen.id)} className="size-9 flex items-center justify-center border border-border text-red-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer" title="Eliminar"><Trash2 className="size-4"/></button>
-                                </div>
+                                </div>              </div>
                             </div>
                           </td>
                         </tr>
@@ -467,7 +485,7 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                                 <span className="text-[10px] font-black uppercase tracking-widest">Precio</span>
                              </div>
                              <p className="text-2xl font-black tabular-nums tracking-tighter text-foreground">
-                                {viewingSpecsOrder.listingCurrency === "DOLAR" ? "$" : "Bs"} {viewingSpecsOrder.listingPrice?.$numberDecimal || viewingSpecsOrder.listingPrice || "0"}
+                                {viewingSpecsOrder.listingCurrency === "DOLAR" ? "$" : "Bs"} {formatPrice(viewingSpecsOrder.listingPrice)}
                              </p>
                           </div>
                           <div className="bg-muted/10 border border-white/5 p-5 space-y-1">
@@ -582,6 +600,151 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                  </button>
               </div>
            </div>
+        </div>
+      )}
+      {/* GEN DETAILS DIALOG */}
+      {viewingGen && (
+        <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300" onClick={(e) => { if(e.target === e.currentTarget) setViewingGen(null) }}>
+          <div className="w-full max-w-3xl bg-card border border-white/5 shadow-[0_0_100px_rgba(37,99,235,0.2)] flex flex-col animate-in zoom-in-95 duration-500 max-h-[90vh]">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-muted/20">
+              <div className="flex items-center gap-4">
+                <div className="size-12 bg-blue-600/10 border border-blue-500/20 flex items-center justify-center">
+                  <Smartphone className="size-6 text-blue-500" />
+                </div>
+                <div className="flex flex-col">
+                  <h3 className="text-sm font-black uppercase italic tracking-[0.2em] text-foreground">Estado de Ejecución del Bot</h3>
+                  <p className="text-[10px] text-muted-foreground uppercase font-black opacity-60">ID Ejecución: #{viewingGen.id}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setViewingGen(null)} 
+                className="size-10 flex items-center justify-center border border-white/5 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+              >
+                <X className="size-5"/>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+              {/* STATUS & DEVICE BANNER */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className={`p-4 border border-current/20 ${genStatusConfig[viewingGen.status]?.bg || "bg-muted/10"} ${genStatusConfig[viewingGen.status]?.color || "text-muted-foreground"} flex items-center justify-between`}>
+                  <div className="flex items-center gap-3">
+                    {(() => {
+                      const Icon = genStatusConfig[viewingGen.status]?.icon || Clock;
+                      return <Icon className="size-5" />;
+                    })()}
+                    <span className="text-xs font-black uppercase tracking-widest">{genStatusConfig[viewingGen.status]?.label || viewingGen.status}</span>
+                  </div>
+                  <div className="text-[8px] font-black uppercase opacity-60">Estado de Ejecución</div>
+                </div>
+                <div className="p-4 bg-muted/5 border border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Smartphone className="size-5 text-blue-500" />
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-foreground uppercase">{viewingGen.device?.serial || "SIN ASIGNAR"}</span>
+                      <span className="text-[8px] font-bold text-muted-foreground uppercase">{viewingGen.device?.personName || "Operador Desconocido"}</span>
+                    </div>
+                  </div>
+                  <div className="text-[8px] font-black uppercase opacity-60">Dispositivo/Bot</div>
+                </div>
+              </div>
+
+              {/* CONSOLIDATED DETAILS - ROOT DATA & BOT VARIANT */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                {/* ORIGINAL LISTING INFO */}
+                <div className="space-y-6">
+                   <div className="flex items-center gap-2 mb-4">
+                      <Database className="size-3.5 text-amber-500" />
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Publicación Original</h4>
+                   </div>
+                   
+                   <div className="space-y-4 bg-muted/10 p-5 border-l-2 border-amber-500/50">
+                      <div className="space-y-1">
+                        <span className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-wider">Precio & Moneda</span>
+                        <p className="text-xl font-black italic tracking-tighter text-foreground">
+                           {viewingGen.botOrder.listingCurrency === "DOLAR" ? "$" : "Bs"} {formatPrice(viewingGen.botOrder.listingPrice)}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-1">
+                            <span className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-wider">Categoría</span>
+                            <p className="text-[10px] font-black uppercase text-foreground">{viewingGen.botOrder.listingCategory?.replace(/_/g, ' ')}</p>
+                         </div>
+                         <div className="space-y-1">
+                            <span className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-wider">Condición</span>
+                            <p className="text-[10px] font-black uppercase text-foreground">{viewingGen.botOrder.listingCondition?.replace(/_/g, ' ')}</p>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                {/* BOT VARIANT INFO */}
+                <div className="space-y-6">
+                   <div className="flex items-center gap-2 mb-4">
+                      <Bot className="size-3.5 text-blue-500" />
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Variante IA del Bot</h4>
+                   </div>
+
+                   <div className="space-y-4 bg-blue-500/5 p-5 border-l-2 border-blue-500/50">
+                      <div className="space-y-1">
+                        <span className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-wider">Título Optimizado</span>
+                        <p className="text-[11px] font-black uppercase italic leading-tight text-foreground">{viewingGen.genTitle}</p>
+                      </div>
+                   </div>
+                </div>
+              </div>
+
+              {/* FULL DESCRIPTION */}
+              <div className="space-y-3 p-6 bg-muted/10 border border-white/5">
+                 <label className="text-[10px] font-black uppercase tracking-widest text-blue-500 opacity-60">Descripción de esta Variante (Marketplace)</label>
+                 <p className="text-[11px] font-medium text-muted-foreground leading-relaxed whitespace-pre-wrap">{viewingGen.genDescription}</p>
+              </div>
+
+              {/* IMAGES */}
+              {viewingGen.imageUrls.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <ImagePlus className="size-3.5 text-blue-500" />
+                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-500 opacity-60">Multimedia de Ejecución ({viewingGen.imageUrls.length})</label>
+                  </div>
+                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 pt-2">
+                    {viewingGen.imageUrls.map((url, idx) => (
+                      <div key={idx} className="aspect-square border border-white/5 bg-black/20 overflow-hidden relative group shadow-sm hover:border-blue-500/30 transition-all">
+                        <img src={url} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TIMESTAMPS */}
+              <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/5">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-widest">Generada el</span>
+                  <div className="flex items-center gap-2 text-[10px] font-black text-foreground uppercase">
+                    <CalendarDays className="size-3 text-blue-500" />
+                    {format(new Date(viewingGen.createdAt), "dd 'de' MMMM, HH:mm", { locale: es })}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-widest">Última Actividad</span>
+                  <div className="flex items-center gap-2 text-[10px] font-black text-foreground uppercase">
+                    <Timer className="size-3 text-amber-500" />
+                    {format(new Date(viewingGen.updatedAt), "dd 'de' MMMM, HH:mm", { locale: es })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8 border-t border-white/5 bg-muted/10 shrink-0">
+              <button 
+                onClick={() => setViewingGen(null)}
+                className="w-full h-14 bg-foreground text-background text-[11px] font-black uppercase tracking-[0.3em] hover:bg-blue-600 hover:text-white transition-all active:scale-[0.98] cursor-pointer shadow-xl shadow-blue-600/10"
+              >
+                Cerrar Detalle
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -29,6 +29,12 @@ import {
 export function MarketplaceClient({ publications }: { publications: any[] }) {
   const [selectedPub, setSelectedPub] = useState<any>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [search, setSearch] = useState("");
+
+  const filteredPublications = publications.filter((pub: any) => 
+    pub.listingTitle?.toLowerCase().includes(search.toLowerCase()) ||
+    pub.listingCategory?.toLowerCase().includes(search.toLowerCase())
+  );
 
   const formatPrice = (price: any) => {
     const num = parseFloat(price?.$numberDecimal || price || "0");
@@ -40,8 +46,35 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
 
   return (
     <>
+      {/* SEARCH INTERFACE (Integrated) */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12 w-full">
+         <div className="relative w-full md:w-96 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground transition-colors group-focus-within:text-blue-500" />
+            <input 
+              type="text" 
+              placeholder="Buscar por título o categoría..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-card border border-border/50 rounded-none py-4 pl-12 pr-4 text-xs font-bold uppercase tracking-widest focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all shadow-sm"
+            />
+            {search && (
+              <button 
+                onClick={() => setSearch("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            )}
+         </div>
+         <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+              {filteredPublications.length} Artículos encontrados
+            </span>
+         </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {publications.map((pub: any) => (
+        {filteredPublications.map((pub: any) => (
           <Card 
             key={pub.id} 
             onClick={() => { setSelectedPub(pub); setActiveImageIndex(0); }}
@@ -52,6 +85,7 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
                 <img 
                   src={pub.imageUrls[0]} 
                   alt={pub.listingTitle} 
+                  loading="lazy"
                   className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
                 />
               ) : (

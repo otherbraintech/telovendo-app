@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import Link from "next/link";
 import { 
   ShoppingBag, 
@@ -21,9 +22,14 @@ import {
   Hammer, 
   Camera 
 } from "lucide-react";
-import { cookies } from "next/headers";
 import { getPublicPublications } from "@/lib/actions/public";
 import { getSession } from "@/lib/auth-utils";
+
+export const metadata: Metadata = {
+  title: "TeloVendo | Marketplace Global & Gestión de Bots",
+  description: "La plataforma definitiva para comprar y vender vehículos, inmuebles y tecnología con orquestación inteligente de bots. Encuentra las mejores ofertas hoy.",
+  keywords: ["marketplace", "bolivia", "comprar", "vender", "vehiculos", "inmuebles", "tecnología", "bots"],
+};
 
 const formatPrice = (price: any) => {
   const num = Number(price?.$numberDecimal || price) || 0;
@@ -116,36 +122,36 @@ export default async function LandingPage() {
         <div className="flex flex-col md:flex-row gap-5 w-[85%] md:w-full max-w-xs md:max-w-2xl mx-auto animate-blur-fade [animation-delay:0.5s] opacity-0 relative z-20" style={{ animationFillMode: "forwards" }}>
           <Link 
             href="/marketplace" 
-            className="flex-1 min-h-[52px] md:min-h-[70px] px-8 rounded-none bg-blue-600 text-white hover:bg-white hover:text-blue-600 font-black text-sm md:text-base uppercase tracking-[0.25em] transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] shadow-2xl flex flex-col items-center justify-center gap-1.5 group cursor-pointer"
+            className="flex-1 h-20 md:h-24 px-8 rounded-none bg-blue-600 text-white hover:bg-blue-700 font-black text-base md:text-xl uppercase italic tracking-tighter transition-all active:scale-[0.98] shadow-xl hover:shadow-[0_0_50px_rgba(37,99,235,0.4)] flex items-center justify-center gap-5 group border-b-4 border-blue-800 hover:border-blue-400"
           >
-            <div className="flex items-center gap-3">
-              Explorar
-              <ShoppingBag className="size-5 md:size-6 transition-transform group-hover:translate-y-[-2px]" />
+            <ShoppingBag className="size-7 md:size-8 transition-transform group-hover:-rotate-12 group-hover:scale-110" />
+            <div className="flex flex-col items-start leading-none pt-1">
+              <span>Explorar</span>
+              <span className="text-[9px] md:text-[10px] opacity-70 normal-case font-black tracking-[0.2em] mt-1">Marketplace Global</span>
             </div>
-            <span className="text-[7px] md:text-[8px] opacity-40 font-bold tracking-[0.3em] uppercase group-hover:text-blue-600/60">Catálogo</span>
           </Link>
 
           {isAuthenticated ? (
             <Link 
               href="/dashboard" 
-              className="flex-1 min-h-[52px] md:min-h-[70px] px-8 rounded-none border border-foreground/30 bg-muted/20 text-foreground hover:bg-foreground hover:text-background font-black text-sm md:text-base uppercase tracking-[0.25em] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex flex-col items-center justify-center gap-1.5 group cursor-pointer"
+              className="flex-1 h-20 md:h-24 px-8 rounded-none bg-neutral-100 dark:bg-black/40 backdrop-blur-md border border-neutral-300 dark:border-white/10 text-neutral-900 dark:text-white/90 hover:bg-neutral-950 hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white font-black text-base md:text-xl uppercase italic tracking-tighter transition-all active:scale-[0.98] flex items-center justify-center gap-5 group shadow-xl"
             >
-              <div className="flex items-center gap-3">
-                Dashboard
-                <LayoutDashboard className="size-5 md:size-6 transition-transform group-hover:rotate-12" />
+              <LayoutDashboard className="size-7 md:size-8 text-blue-600 dark:text-blue-500 transition-transform group-hover:rotate-12" />
+              <div className="flex flex-col items-start leading-none pt-1">
+                <span>Dashboard</span>
+                <span className="text-[9px] md:text-[10px] opacity-50 dark:opacity-40 normal-case font-black tracking-[0.2em] mt-1">Control Maestro</span>
               </div>
-              <span className="text-[7px] md:text-[8px] opacity-40 font-bold tracking-[0.3em] uppercase group-hover:text-background/60">Control</span>
             </Link>
           ) : (
             <Link 
               href="/login" 
-              className="flex-1 min-h-[76px] md:min-h-[70px] px-8 rounded-none border border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background font-black text-sm md:text-base uppercase tracking-[0.25em] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex flex-col items-center justify-center gap-1.5 group cursor-pointer"
+              className="flex-1 h-20 md:h-24 px-8 rounded-none bg-neutral-100 dark:bg-black/40 backdrop-blur-md border border-neutral-300 dark:border-white/10 text-neutral-900 dark:text-white/90 hover:bg-neutral-950 hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white font-black text-base md:text-xl uppercase italic tracking-tighter transition-all active:scale-[0.98] flex items-center justify-center gap-5 group shadow-xl"
             >
-              <div className="flex items-center gap-3">
-                Publicar
-                <Tag className="size-5 md:size-6 transition-transform group-hover:scale-125" />
+              <Tag className="size-7 md:size-8 text-blue-600 dark:text-blue-500 transition-transform group-hover:scale-125" />
+              <div className="flex flex-col items-start leading-none pt-1">
+                <span>Publicar</span>
+                <span className="text-[9px] md:text-[10px] opacity-50 dark:opacity-40 normal-case font-black tracking-[0.2em] mt-1">Vender Ahora</span>
               </div>
-              <span className="text-[7px] md:text-[8px] opacity-40 font-bold tracking-[0.3em] uppercase group-hover:text-background/60">Vender</span>
             </Link>
           )}
         </div>
