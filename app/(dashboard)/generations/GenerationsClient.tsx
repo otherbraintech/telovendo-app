@@ -61,6 +61,7 @@ interface Generation {
     listingCurrency?: string;
     listingCategory?: string;
     listingCondition?: string;
+    imageUrls: string[];
   };
   device: {
     serial: string;
@@ -135,6 +136,22 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
     });
     return Object.values(ordersMap);
   }, [filtered]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editingGen || !e.target.files) return;
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setEditingGen({
+          ...editingGen,
+          imageUrls: [...editingGen.imageUrls, base64String]
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     if (groupedOrders.length === 1) {
@@ -671,20 +688,69 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                  <div className="space-y-2"><label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Descripción para el Marketplace</label><textarea rows={5} value={editingGen.genDescription || ""} onChange={e => setEditingGen({...editingGen, genDescription: e.target.value})} className="w-full bg-muted/20 border border-border p-4 text-xs font-medium focus:ring-2 focus:ring-blue-500 outline-none resize-none transition-all leading-relaxed" /></div>
                  <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Multimedia (Variante Única)</label>
-                    <div className="flex flex-wrap gap-3 mt-2">
-                       {editingGen.imageUrls.map((url, idx) => (
-                         <div key={idx} className="relative size-20 border border-border group overflow-hidden shadow-sm">
-                           <img src={url} className="w-full h-full object-cover" />
-                           <div className="absolute inset-x-0 bottom-0 py-1 bg-black/60 text-[8px] font-black text-center text-white opacity-0 group-hover:opacity-100 transition-opacity">IMG {idx + 1}</div>
-                           <button type="button" onClick={() => setEditingGen({...editingGen, imageUrls: editingGen.imageUrls.filter((_, i) => i !== idx)})} className="absolute top-1 right-1 size-6 bg-red-600 text-white rounded-none opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all cursor-pointer shadow-lg hover:bg-black"><Trash2 className="size-3" /></button>
-                         </div>
-                       ))}
-                       <label className="size-20 border border-dashed border-blue-500/40 bg-blue-500/5 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-500/10 hover:border-blue-500 transition-all">
-                          <ImagePlus className="size-5 text-blue-500" />
-                          <span className="text-[8px] font-black uppercase mt-1.5 text-blue-500/70 text-center px-1 leading-tight">Nueva<br/>Imagen</span>
-                          <input type="file" className="hidden" />
-                       </label>
-                    </div>
+                     <div className="flex flex-col gap-4 mt-2">
+                        {/* IMÁGENES ACTUALES */}
+                        <div className="space-y-3">
+                           <span className="text-[8px] font-black uppercase text-blue-500/60 tracking-widest">En esta Variante:</span>
+                           <div className="flex flex-wrap gap-2">
+                              {editingGen.imageUrls.map((url, idx) => (
+                                <div key={idx} className="relative size-20 border border-blue-500 bg-blue-500/5 group overflow-hidden shadow-sm">
+                                  <img src={url} className="w-full h-full object-cover" alt={`Variant ${idx}`} />
+                                  <button type="button" onClick={() => setEditingGen({...editingGen, imageUrls: editingGen.imageUrls.filter((_, i) => i !== idx)})} className="absolute top-0 right-0 size-6 bg-red-600 text-white flex items-center justify-center cursor-pointer shadow-lg hover:bg-black transition-all"><Trash2 className="size-3" /></button>
+                                </div>
+                              ))}
+                              <label className="size-20 border border-dashed border-blue-500/40 bg-blue-500/5 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-500/10 hover:border-blue-500 transition-all">
+                                 <ImagePlus className="size-5 text-blue-500" />
+                                 <span className="text-[8px] font-black uppercase mt-1.5 text-blue-500/70 text-center px-1 leading-tight">Subir<br/>Foto</span>
+                                 <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
+                              </label>
+                           </div>
+                        </div>
+
+                        {/* IMÁGENES SUGERIDAS (DE LA PUBLICACIÓN) */}
+                        {editingGen.botOrder.imageUrls && editingGen.botOrder.imageUrls.length > 0 && (
+                          <div className="space-y-3 pt-4 border-t border-border/50">
+                             <div className="flex items-center justify-between">
+                                <span className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-widest">Originales de la publicación:</span>
+                                <button 
+                                  type="button" 
+                                  onClick={() => setEditingGen({ ...editingGen, imageUrls: [...new Set([...editingGen.imageUrls, ...(editingGen.botOrder.imageUrls || [])])] })}
+                                  className="text-[8px] font-black uppercase text-blue-500 hover:underline"
+                                >
+                                  Usar Todas
+                                </button>
+                             </div>
+                             <div className="flex flex-wrap gap-2 opacity-80 hover:opacity-100 transition-opacity">
+                                {editingGen.botOrder.imageUrls.map((url, idx) => {
+                                  const isSelected = editingGen.imageUrls.includes(url);
+                                  return (
+                                    <button 
+                                      key={idx} 
+                                      type="button"
+                                      onClick={() => {
+                                        if (isSelected) {
+                                          setEditingGen({...editingGen, imageUrls: editingGen.imageUrls.filter(u => u !== url)});
+                                        } else {
+                                          setEditingGen({...editingGen, imageUrls: [...editingGen.imageUrls, url]});
+                                        }
+                                      }}
+                                      className={`relative size-20 border transition-all overflow-hidden cursor-pointer ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-lg' : 'border-border grayscale hover:grayscale-0 hover:border-blue-500/50'}`}
+                                    >
+                                      <img src={url} className="w-full h-full object-cover" alt={`Order ${idx}`} />
+                                      {isSelected && (
+                                        <div className="absolute inset-0 bg-blue-500/10 flex items-center justify-center">
+                                          <div className="bg-blue-600 text-white rounded-full p-0.5">
+                                            <CheckCircle2 className="size-3" />
+                                          </div>
+                                        </div>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                             </div>
+                          </div>
+                        )}
+                     </div>
                  </div>
                  <div className="pt-6 flex gap-4"><button type="button" onClick={() => setEditingGen(null)} className="flex-1 h-14 border border-border text-[11px] font-black uppercase tracking-widest cursor-pointer hover:bg-muted/50 transition-all">Descartar</button><button type="submit" disabled={saving !== null} className="flex-[2] h-14 bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-3 cursor-pointer shadow-2xl shadow-blue-600/30 active:scale-95 hover:bg-blue-500 transition-all">{saving ? <div className="size-5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Guardar Configuración"}</button></div>
               </form>

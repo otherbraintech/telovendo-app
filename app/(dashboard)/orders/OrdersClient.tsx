@@ -900,7 +900,7 @@ export default function OrdersClient() {
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button 
               onClick={() => { setEditForm({ listingCategory: "VARIOS", listingCondition: "NUEVO", quantity: 1, listingType: "ARTICULO" }); setEditSelectedFiles([]); setIsCreating(true); setCreationStep("CHOICE"); setActiveImageIndex(0); clearDraft(); }}
-              className="h-10 px-6 w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 cursor-pointer"
+              className="h-14 md:h-10 px-6 w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 cursor-pointer"
             >
               + Nueva Publicación
             </button>
@@ -1058,7 +1058,7 @@ export default function OrdersClient() {
                     <button 
                       onClick={(e) => inlineSendToBots(e, order.id)} 
                       disabled={saving} 
-                      className="h-9 px-4 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-600/20 active:scale-95 shrink-0"
+                      className="h-12 md:h-9 px-4 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-600/20 active:scale-95 shrink-0"
                     >
                       {saving ? <Loader2 className="size-3 animate-spin"/> : <><Zap className="size-3 fill-current" /> Enviar</>}
                     </button>
@@ -1066,7 +1066,7 @@ export default function OrdersClient() {
                     <Link 
                       href={`/generations/${order.id}`} 
                       onClick={(e) => e.stopPropagation()} 
-                      className="h-9 px-4 bg-muted hover:bg-muted/80 text-foreground border border-border text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 shrink-0 group/btn"
+                      className="h-12 md:h-9 px-4 bg-muted hover:bg-muted/80 text-foreground border border-border text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 shrink-0 group/btn"
                     >
                       <Activity className="size-3 text-blue-500 group-hover/btn:animate-pulse" /> 
                       <span>VER Ejecución</span>
