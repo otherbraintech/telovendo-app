@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { getOrdersByProject, updateBotOrder, sendOrderToBots, createBotOrder, cancelBotOrder, deleteBotOrder } from "@/lib/actions/orders"
 import { getProjects } from "@/lib/actions/projects"
+import { getAvailableWaFbDevices } from "@/lib/actions/devices"
 import { improveTitle, improveDescription, generateProductImage, improveProductImage, analyzeVehicleImage, analyzeProductImage, type ImproveType } from "@/lib/actions/ai"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -65,14 +66,10 @@ const OrderCardImage = ({ url, alt, className }: { url: string, alt: string, cla
 };
 
 // ─── SEGURIDAD Y VALIDACIONES ────────────────────────────────────
-const phoneRegex = /(?:\+?\d{1,3})?(?:[ -]?\(?\d{2,3}\)?[ -]?\d{3,4}[ -]?\d{3,4}|\d{7,10})/g;
 const FORMAT_CLEAN_REGEX = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}*]/gu;
 
 const validateTextContent = (text: string) => {
-  if (phoneRegex.test(text)) {
-    return { valid: false, reason: "No se permiten números de teléfono en el título o descripción para evitar bloqueos del marketplace." };
-  }
-  return { valid: true };
+  return { valid: true, reason: "" };
 };
 
 const SecurityWarning = ({ visible }: { visible: boolean }) => {
@@ -84,7 +81,7 @@ const SecurityWarning = ({ visible }: { visible: boolean }) => {
         <AlertCircle className="size-3.5 text-amber-500 mt-0.5 shrink-0" />
         <div>
           <p className="text-[10px] font-black uppercase text-amber-500 tracking-widest leading-none mb-1">Aviso de Seguridad</p>
-          <p className="text-[9px] text-amber-500/80 font-bold uppercase leading-tight">Prohibido subir imágenes con números de teléfono o códigos QR. No incluyas datos de contacto en el título o descripción.</p>
+          <p className="text-[9px] text-amber-500/80 font-bold uppercase leading-tight">Prohibido subir imágenes con números de teléfono o códigos QR. La IA agregará automáticamente el número del bot designado.</p>
         </div>
       </div>
     </div>
@@ -97,6 +94,17 @@ export default function OrdersClient() {
   const [loading, setLoading] = useState(false)
   const [hasAnyProjects, setHasAnyProjects] = useState<boolean | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
+  const [availableBots, setAvailableBots] = useState<any[]>([])
+
+  // Número de WhatsApp del bot principal disponible
+  const mainBotPhone = (() => {
+    if (!availableBots || availableBots.length === 0) return "";
+    const bot = availableBots[0];
+    if (!bot?.redesSociales) return "";
+    const wa = (bot.redesSociales as any[]).find((r: any) => r.red_social === "whatsapp");
+    return wa?.telefono_asociado || wa?.user || "";
+  })();
+  const CONTACT_SUFFIX = mainBotPhone ? `\n\n📲 WhatsApp: ${mainBotPhone}` : "";
   
   // Sync selected order to breadcrumbs
   useEffect(() => {
@@ -186,6 +194,9 @@ export default function OrdersClient() {
     getProjects().then(projs => {
       setHasAnyProjects(projs && projs.length > 0);
     });
+    getAvailableWaFbDevices().then(bots => {
+      setAvailableBots(bots || []);
+    });
   }, [selectedProjectId]);
 
   const filteredOrders = useMemo(() => 
@@ -210,6 +221,17 @@ export default function OrdersClient() {
       setActiveImageIndex(editingMixedImages.length - 1);
     }
   }, [editingMixedImages.length]);
+
+  // Auto-slideshow para vista previa
+  useEffect(() => {
+    if (!selectedOrder || isEditing || editingMixedImages.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setActiveImageIndex((prev) => (prev + 1) % editingMixedImages.length);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [selectedOrder, isEditing, editingMixedImages.length]);
 
   const handleEditFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -317,6 +339,18 @@ export default function OrdersClient() {
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
       value = value.replace(FORMAT_CLEAN_REGEX, "");
     }
+
+    // Si es la descripción y hay un sufijo de contacto protegido, garantizar que esté al final
+    if (e.target.name === "listingDescription" && CONTACT_SUFFIX) {
+      if (!value.endsWith(CONTACT_SUFFIX)) {
+        // si el usuario lo borró o escribió más, re-adjuntarlo
+        const base = value.endsWith(mainBotPhone)
+          ? value  // permitínle editar el texto Y el número no se toca
+          : value.replace(new RegExp(CONTACT_SUFFIX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "$"), "").trimEnd();
+        setEditForm({ ...editForm, listingDescription: base + CONTACT_SUFFIX });
+        return;
+      }
+    }
     
     setEditForm({ ...editForm, [e.target.name]: value })
   }
@@ -347,10 +381,25 @@ export default function OrdersClient() {
   const handleImproveDescription = async () => {
     try {
       setAiLoading("description")
+      
+      let botPhoneToPass = undefined;
+      if (availableBots && availableBots.length > 0) {
+        let botToDisplay = availableBots[0];
+        if (isEditing && selectedOrder?.genMarketplaces?.length > 0) {
+          const assignedBotId = selectedOrder.genMarketplaces[0]?.deviceId;
+          if (assignedBotId) botToDisplay = selectedOrder.genMarketplaces[0].device || botToDisplay;
+        }
+        if (botToDisplay && botToDisplay.redesSociales) {
+          const wa = botToDisplay.redesSociales.find((r:any) => r.red_social === 'whatsapp');
+          if (wa) botPhoneToPass = wa.telefono_asociado || wa.user;
+        }
+      }
+
       let improved = await improveDescription(
         editForm.listingTitle || "",
         editForm.listingDescription || "",
-        editForm.listingCategory
+        editForm.listingCategory,
+        botPhoneToPass
       )
       
       // Sanitizar resultado de IA
@@ -949,11 +998,21 @@ export default function OrdersClient() {
                 <h3 className="text-sm font-bold text-foreground line-clamp-1 leading-none uppercase tracking-tight">{order.listingTitle || order.orderName}</h3>
                 <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed opacity-70">{order.listingDescription || "Publicación sin descripción detallada."}</p>
                 <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/50">
-                   <div className="flex items-center gap-2">
-                      <div className="size-5 bg-blue-500/10 flex items-center justify-center rounded-none border border-blue-500/20">
-                        <Bot className="size-3 text-blue-500" />
-                      </div>
-                      <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">{order.quantity || 1} Bots</span>
+                   <div className="flex flex-col gap-1">
+                     <div className="flex items-center gap-2">
+                       <div className="size-5 bg-blue-500/10 flex items-center justify-center rounded-none border border-blue-500/20">
+                         <Bot className="size-3 text-blue-500" />
+                       </div>
+                       <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">{order.quantity || 1} Bots</span>
+                     </div>
+                     {(() => {
+                       const mainGen = order.genMarketplaces?.find((g: any) => g.device?.redesSociales);
+                       if (!mainGen?.device?.redesSociales) return null;
+                       const wa = (mainGen.device.redesSociales as any[]).find((r: any) => r.red_social === "whatsapp");
+                       const phone = wa?.telefono_asociado || wa?.user;
+                       if (!phone) return null;
+                       return <span className="text-[10px] font-bold text-emerald-500 tabular-nums">{phone}</span>;
+                     })()}
                    </div>
                   {order.status === "LISTA" ? (
                     <button onClick={(e) => inlineSendToBots(e, order.id)} disabled={saving} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.15em] transition-all flex items-center gap-2 shadow-xl shadow-blue-600/30 active:scale-95">
@@ -1013,7 +1072,7 @@ export default function OrdersClient() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl px-4">
                     <button onClick={() => { 
-                      setEditForm({...editForm, listingType: "ARTICULO", listingCategory: "VARIOS", quantity: 1}); 
+                      setEditForm({...editForm, listingType: "ARTICULO", listingCategory: "VARIOS", quantity: 1, listingDescription: CONTACT_SUFFIX.trimStart()}); 
                       setCreationStep("FORM"); 
                     }} className="group p-6 md:p-8 border border-border bg-muted/20 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-center flex flex-col items-center gap-4 cursor-pointer relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity"><Box className="size-16 translate-x-4 -translate-y-4" /></div>
@@ -1021,7 +1080,7 @@ export default function OrdersClient() {
                       <div className="space-y-1 z-10"><h4 className="text-xs font-black uppercase tracking-widest">Artículos</h4><p className="text-[8px] md:text-[9px] text-muted-foreground uppercase font-medium">Ropa, Electrónica, Hogar...</p></div>
                     </button>
                     <button onClick={() => { 
-                      setEditForm({...editForm, listingType: "VEHICULO", listingCategory: "AUTOS_Y_CAMIONETAS", quantity: 1}); 
+                      setEditForm({...editForm, listingType: "VEHICULO", listingCategory: "AUTOS_Y_CAMIONETAS", quantity: 1, listingDescription: CONTACT_SUFFIX.trimStart()}); 
                       setCreationStep("FORM"); 
                     }} className="group p-6 md:p-8 border border-border bg-muted/20 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all text-center flex flex-col items-center gap-4 cursor-pointer relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity"><Car className="size-16 translate-x-4 -translate-y-4" /></div>
@@ -1029,7 +1088,7 @@ export default function OrdersClient() {
                       <div className="space-y-1 z-10"><h4 className="text-xs font-black uppercase tracking-widest">Vehículos</h4><p className="text-[8px] md:text-[9px] text-muted-foreground uppercase font-medium">Autos, Motos, Camiones...</p></div>
                     </button>
                     <button onClick={() => { 
-                      setEditForm({...editForm, listingType: "PROPIEDAD", listingCategory: "ALQUILER_PROPIEDADES", quantity: 1}); 
+                      setEditForm({...editForm, listingType: "PROPIEDAD", listingCategory: "ALQUILER_PROPIEDADES", quantity: 1, listingDescription: CONTACT_SUFFIX.trimStart()}); 
                       setCreationStep("FORM"); 
                     }} className="group p-6 md:p-8 border border-border bg-muted/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all text-center flex flex-col items-center gap-4 cursor-pointer relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity"><Home className="size-16 translate-x-4 -translate-y-4" /></div>
@@ -1123,9 +1182,60 @@ export default function OrdersClient() {
                    <div className="mb-4 flex items-center gap-3">
                      <div className="h-6 w-1.5 bg-blue-500" />
                      <h3 className="text-lg font-black uppercase tracking-widest text-foreground">
-                       Nueva Publicación: {editForm.listingType === "VEHICULO" ? "Vehículo" : editForm.listingType === "PROPIEDAD" ? "Propiedad" : "Artículo"}
+                       {isEditing ? "Editar Publicación: " : "Nueva Publicación: "} {editForm.listingType === "VEHICULO" ? "Vehículo" : editForm.listingType === "PROPIEDAD" ? "Propiedad" : "Artículo"}
                      </h3>
                    </div>
+                   
+                   {/* SECCION BOT SUGERIDO/ASIGNADO */}
+                   {(isEditing || isCreating) && availableBots.length > 0 && (
+                     <div className="p-4 bg-blue-500/5 border border-blue-500/20 w-full mb-6 relative overflow-hidden group">
+                       <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-blue-500/10 to-transparent pointer-events-none" />
+                       <p className="text-[9px] font-black uppercase text-blue-500 tracking-widest mb-3 flex items-center gap-2">
+                         <Bot className="size-3.5" /> Bot Principal {isEditing && selectedOrder?.genMarketplaces?.length > 0 ? "Asignado" : "Sugerido"}
+                       </p>
+                       {(() => {
+                         let botToDisplay = availableBots[0];
+                         if (isEditing && selectedOrder?.genMarketplaces?.length > 0) {
+                           // Try to show the actually assigned bot if available in genMarketplaces
+                           const assignedBotId = selectedOrder.genMarketplaces[0]?.deviceId;
+                           if (assignedBotId) {
+                             // we just show the name if we don't have redesSociales populated here, but usually genMarketplace fetches device
+                             botToDisplay = selectedOrder.genMarketplaces[0].device || botToDisplay;
+                           }
+                         }
+
+                         if (!botToDisplay || !botToDisplay.redesSociales) return <p className="text-[9px] text-muted-foreground uppercase font-black">Información no disponible</p>;
+                         
+                         const wa = botToDisplay.redesSociales?.find?.((r:any) => r.red_social === 'whatsapp');
+                         const fb = botToDisplay.redesSociales?.find?.((r:any) => r.red_social === 'facebook');
+
+                         return (
+                           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                             <div className="flex flex-col">
+                               <span className="text-[11px] font-black text-foreground uppercase">{botToDisplay.serial || "SIN ASIGNAR"}</span>
+                               <span className="text-[9px] font-bold text-muted-foreground uppercase">{botToDisplay.personName || "Operador Desconocido"}</span>
+                             </div>
+                             <div className="h-6 w-px bg-border hidden md:block" />
+                             <div className="flex flex-wrap items-center gap-3">
+                               {wa && (
+                                 <div className="flex items-center gap-1.5" title="WhatsApp">
+                                   <span className="text-[9px] font-black bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 border border-emerald-500/20">WA</span>
+                                   <span className="text-[11px] font-mono font-black text-foreground">{wa.telefono_asociado || wa.user || "S/N"}</span>
+                                 </div>
+                               )}
+                               {fb && (
+                                 <div className="flex items-center gap-1.5" title="Facebook">
+                                   <span className="text-[9px] font-black bg-blue-500/10 text-blue-500 px-1.5 py-0.5 border border-blue-500/20">FB</span>
+                                   <span className="text-[10px] font-bold text-foreground opacity-80">{fb.user || "N/A"}</span>
+                                 </div>
+                               )}
+                             </div>
+                           </div>
+                         );
+                       })()}
+                     </div>
+                   )}
+
                    <div className="space-y-5">
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
@@ -1277,7 +1387,14 @@ export default function OrdersClient() {
                              {aiLoading === "description" ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />} Mejorar con IA
                            </button>
                          </div>
-                         <Textarea className="min-h-[140px] bg-muted/20 border-border text-xs leading-relaxed resize-none p-4 focus:ring-2 focus:ring-blue-500" name="listingDescription" value={editForm.listingDescription || ""} onChange={handleEditChange} placeholder="Describe detalladamente el producto..." />
+                         <Textarea className="min-h-[140px] bg-muted/20 border-border text-xs leading-relaxed resize-none p-4 focus:ring-2 focus:ring-blue-500" name="listingDescription" value={editForm.listingDescription || ""} onChange={(e) => {
+                           const val = e.target.value;
+                           if (!val.includes(CONTACT_SUFFIX.trimStart())) {
+                             setEditForm({...editForm, listingDescription: val + CONTACT_SUFFIX});
+                           } else {
+                             handleEditChange(e);
+                           }
+                         }} placeholder="Describe detalladamente el producto..." />
                       </div>
                    </div>
                    <div className="pt-6 flex gap-3"><button onClick={() => setIsCreating(false)} className="flex-1 h-14 text-[11px] font-black uppercase tracking-[0.2em] border border-border hover:bg-muted transition-all cursor-pointer">Cancelar</button><button disabled={saving} onClick={handleCreate} className="flex-[2] h-14 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all shadow-2xl shadow-blue-600/30">{saving ? <Loader2 className="size-5 animate-spin"/> : "CREAR PUBLICACIÓN"}</button></div>
@@ -1319,8 +1436,24 @@ export default function OrdersClient() {
              </button>
              <div className="flex-1 flex flex-col md:flex-row md:overflow-hidden">
                <div className="w-full md:w-[48%] bg-muted/20 flex flex-col border-b md:border-b-0 md:border-r border-border p-4 md:p-6 shrink-0 md:overflow-y-auto custom-scrollbar">
-                  <div className="relative aspect-square w-full bg-black/20 flex items-center justify-center overflow-hidden border border-border shadow-inner">
-                    {editingMixedImages.length > 0 ? (<FilePreview file={editingMixedImages[activeImageIndex] || editingMixedImages[0]} className="w-full h-full object-contain" />) : (<div className="text-center p-8"><ShoppingBag className="size-20 mx-auto text-muted-foreground/10" /><p className="text-[10px] font-black uppercase text-muted-foreground/30 mt-4 tracking-widest">Multimedia</p></div>)}
+                  <div className="relative aspect-square w-full bg-black/20 flex items-center justify-center overflow-hidden border border-border shadow-inner group">
+                    {editingMixedImages.length > 0 ? (
+                      <>
+                        <FilePreview file={editingMixedImages[activeImageIndex] || editingMixedImages[0]} className="w-full h-full object-contain" />
+                        {editingMixedImages.length > 1 && !isEditing && (
+                          <>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setActiveImageIndex((prev) => (prev - 1 + editingMixedImages.length) % editingMixedImages.length); }} 
+                              className="absolute left-3 top-1/2 -translate-y-1/2 size-10 bg-black/50 text-white flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-all z-10 hover:bg-blue-600 hover:scale-110 active:scale-95 border border-white/10"
+                            ><ChevronLeft className="size-6" /></button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setActiveImageIndex((prev) => (prev + 1) % editingMixedImages.length); }} 
+                              className="absolute right-3 top-1/2 -translate-y-1/2 size-10 bg-black/50 text-white flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-all z-10 hover:bg-blue-600 hover:scale-110 active:scale-95 border border-white/10"
+                            ><ChevronRight className="size-6" /></button>
+                          </>
+                        )}
+                      </>
+                    ) : (<div className="text-center p-8"><ShoppingBag className="size-20 mx-auto text-muted-foreground/10" /><p className="text-[10px] font-black uppercase text-muted-foreground/30 mt-4 tracking-widest">Multimedia</p></div>)}
                   </div>
                   {editingMixedImages.length > 1 && (
                       <div className="bg-background/20 mt-4 p-3 border border-border/50 flex items-center gap-3 overflow-x-auto scrollbar-hide">
@@ -1452,13 +1585,27 @@ export default function OrdersClient() {
                             </div>
                           )}
                           <h2 className="text-xl md:text-2xl font-bold leading-tight uppercase tracking-tight">{selectedOrder.listingTitle || selectedOrder.orderName}</h2>
-                          <div className="mt-2 flex items-center gap-1.5">
-                             <div className="size-5 bg-blue-500/10 flex items-center justify-center rounded">
-                               <Bot className="size-3 text-blue-500" />
+                          <div className="mt-2 flex items-center gap-3">
+                             <div className="flex items-center gap-1.5">
+                               <div className="size-5 bg-blue-500/10 flex items-center justify-center rounded">
+                                 <Bot className="size-3 text-blue-500" />
+                               </div>
+                               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                 {selectedOrder.quantity || 1} Bots Asignados
+                               </span>
                              </div>
-                             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                               {selectedOrder.quantity || 1} Bots Asignados
-                             </span>
+                             {(() => {
+                               const mainGen = selectedOrder.genMarketplaces?.find((g: any) => g.device?.redesSociales);
+                               if (!mainGen?.device?.redesSociales) return null;
+                               const wa = (mainGen.device.redesSociales as any[]).find((r: any) => r.red_social === "whatsapp");
+                               const phone = wa?.telefono_asociado || wa?.user;
+                               if (!phone) return null;
+                               return (
+                                 <span className="text-[11px] font-bold text-emerald-500 tabular-nums">
+                                   📲 {phone}
+                                 </span>
+                               );
+                             })()}
                           </div>
                         </div>
                         <div className="space-y-6">
@@ -1474,6 +1621,39 @@ export default function OrdersClient() {
                     <div className="flex flex-col h-full overflow-hidden">
                       <SecurityWarning visible={editingMixedImages.length > 0} />
                       <div className="mb-4 flex items-center gap-3 shrink-0"><div className="h-6 w-1.5 bg-blue-500" /><h3 className="text-lg font-black uppercase tracking-widest text-foreground">Editar {({ VEHICULO: "Vehículo", PROPIEDAD: "Propiedad", ARTICULO: "Artículo" } as any)[selectedOrder.listingType] || "Artículo"}</h3></div>
+                      
+                      {/* BOT BANNER */}
+                      {availableBots.length > 0 && (() => {
+                         const bot = availableBots[0];
+                         if (!bot?.redesSociales) return null;
+                         const wa = (bot.redesSociales as any[]).find((r:any) => r.red_social === 'whatsapp');
+                         const fb = (bot.redesSociales as any[]).find((r:any) => r.red_social === 'facebook');
+                         if (!wa) return null;
+                         return (
+                           <div className="p-4 bg-blue-500/5 border border-blue-500/20 w-full mb-4 relative overflow-hidden shrink-0">
+                             <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-blue-500/10 to-transparent pointer-events-none" />
+                             <p className="text-[9px] font-black uppercase text-blue-500 tracking-widest mb-3 flex items-center gap-2">
+                               <Bot className="size-3.5" /> Bot Principal Sugerido
+                             </p>
+                             <div className="flex flex-wrap items-center gap-3">
+                               <span className="text-[11px] font-black text-foreground uppercase">{bot.serial}</span>
+                               {bot.personName && <span className="text-[9px] text-muted-foreground uppercase">{bot.personName}</span>}
+                               <div className="h-3 w-px bg-border" />
+                               <div className="flex items-center gap-1.5">
+                                 <span className="text-[9px] font-black bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 border border-emerald-500/20">WA</span>
+                                 <span className="text-[11px] font-mono font-black text-foreground">{wa.telefono_asociado || wa.user}</span>
+                               </div>
+                               {fb && (
+                                 <div className="flex items-center gap-1.5">
+                                   <span className="text-[9px] font-black bg-blue-500/10 text-blue-500 px-1.5 py-0.5 border border-blue-500/20">FB</span>
+                                   <span className="text-[10px] font-bold text-foreground opacity-80">{fb.user}</span>
+                                 </div>
+                               )}
+                             </div>
+                           </div>
+                         );
+                       })()}
+
                       <div className="flex-1 md:overflow-y-auto custom-scrollbar pr-2">
                         <div className="space-y-5">
                           <div className="space-y-1.5">

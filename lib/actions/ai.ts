@@ -65,7 +65,8 @@ REGLAS:
 export async function improveDescription(
   currentTitle: string,
   currentDescription: string,
-  category?: string
+  category?: string,
+  botPhone?: string
 ): Promise<string> {
   const apiKey = getApiKey();
 
@@ -80,7 +81,7 @@ ESTILO REQUERIDO:
 REGLAS DE CONTENIDO:
 1. MANTÉN DATOS TÉCNICOS: Si hay modelos (ej: T10, T11), tallas o precios de variantes, inclúyelos siempre.
 2. CONSERVA LAS VARIANTES: Si hay varios modelos con precios distintos, lístalos claramente en líneas separadas sin usar símbolos especiales.
-3. ELIMINA EL CONTACTO: Nada de teléfonos, WhatsApp, enlaces o redes sociales. Indica que pregunten por inbox.
+${botPhone ? `3. INCLUYE ESTE CONTACTO: Al final de la descripción, agrega "📲 WhatsApp para consultas: ${botPhone}". Es el único contacto permitido.` : "3. ELIMINA EL CONTACTO: Nada de teléfonos, WhatsApp, enlaces o redes sociales. Indica que pregunten por inbox."}
 4. Nada de mayúsculas excesivas o lenguaje publicitario rebuscado.
 
 Responde SOLO con el texto de la descripción, sin explicaciones ni comillas.`;

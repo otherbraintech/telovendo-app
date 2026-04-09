@@ -68,6 +68,19 @@ export async function updateBotOrderStatus(orderId: string, status: any) {
   return JSON.parse(JSON.stringify(updated));
 }
 
+// Solo actualiza el status de la orden (BotOrder) sin afectar los GenMarketplace
+export async function updateOnlyOrderStatus(orderId: string, status: string) {
+  const session = await getSession();
+  if (!session) throw new Error("No session");
+
+  const updated = await prisma.botOrder.update({
+    where: { id: orderId, userId: session.user.id },
+    data: { status },
+  });
+
+  return JSON.parse(JSON.stringify(updated));
+}
+
 export async function getGenerationsByOrder(orderId: string) {
   const session = await getSession();
   if (!session) return [];

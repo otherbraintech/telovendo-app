@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Info,
   Clock,
-  ShieldCheck
+  ShieldCheck,
+  Smartphone
 } from "lucide-react";
 import {
   Dialog,
@@ -43,6 +44,26 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
       maximumFractionDigits: 2,
     }).format(num);
   };
+
+  const getBotPhoneNumber = (pub: any) => {
+    if (!pub.genMarketplaces || pub.genMarketplaces.length === 0) return null;
+    const genMarketplace = pub.genMarketplaces[0];
+    if (!genMarketplace.device || !genMarketplace.device.redesSociales) return null;
+    
+    const wa = genMarketplace.device.redesSociales.find((r: any) => r.red_social === "whatsapp");
+    return wa?.telefono_asociado || wa?.user || null;
+  };
+
+  // Auto-progression for images in dialog
+  useEffect(() => {
+    if (!selectedPub || !selectedPub.imageUrls || selectedPub.imageUrls.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setActiveImageIndex((prev) => (prev + 1) % selectedPub.imageUrls.length);
+    }, 3000); // Change image every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [selectedPub]);
 
   return (
     <>
@@ -106,11 +127,22 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
                    {pub.listingTitle}
                  </h3>
               </div>
-              <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
-                  <span className="text-xs font-black tracking-tighter">{pub.listingCurrency === "DOLAR" ? "$" : "Bs"}</span>
-                  <span className="text-xl font-black italic tracking-tighter">
-                    {formatPrice(pub.listingPrice)}
-                  </span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+                    <span className="text-xs font-black tracking-tighter">{pub.listingCurrency === "DOLAR" ? "$" : "Bs"}</span>
+                    <span className="text-xl font-black italic tracking-tighter">
+                      {formatPrice(pub.listingPrice)}
+                    </span>
+                </div>
+                {(() => {
+                  const phoneNumber = getBotPhoneNumber(pub);
+                  return phoneNumber ? (
+                    <div className="flex items-center gap-2 text-[9px] font-mono text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors">
+                      <Smartphone className="size-3" />
+                      <span>{phoneNumber}</span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </CardHeader>
 
@@ -206,14 +238,9 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
               {/* INFO SECTION */}
               <div className="flex-1 p-6 md:p-12 space-y-8 md:overflow-y-auto custom-scrollbar md:max-h-[90vh]">
                 <div className="space-y-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Badge className="bg-blue-600 text-white border-0 text-[10px] font-black tracking-widest uppercase rounded-none py-1.5 px-3">
+                  <Badge className="bg-blue-600 text-white border-0 text-[10px] font-black tracking-widest uppercase rounded-none py-1.5 px-3">
                       {selectedPub.listingCondition || "NUEVO"}
                     </Badge>
-                    <div className="flex items-center gap-1.5 text-emerald-500 font-bold text-[10px] uppercase tracking-widest bg-emerald-500/10 px-2 py-1">
-                       <ShieldCheck className="size-3" /> Verificado por Bots
-                    </div>
-                  </div>
                   
                   <h2 className="text-3xl font-black uppercase italic tracking-tighter text-blue-950 dark:text-blue-50 leading-none">
                     {selectedPub.listingTitle}
@@ -225,6 +252,15 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
                       {formatPrice(selectedPub.listingPrice)}
                     </span>
                   </div>
+                  {(() => {
+                    const phoneNumber = getBotPhoneNumber(selectedPub);
+                    return phoneNumber ? (
+                      <div className="flex items-center gap-2 text-sm font-mono text-emerald-600 dark:text-emerald-400 mt-3">
+                        <Smartphone className="size-4" />
+                        <span>{phoneNumber}</span>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
 
                 <div className="space-y-6 pt-6 border-t border-border/40">

@@ -10,12 +10,22 @@ export async function getPublicPublications() {
       },
       orderBy: {
         createdAt: "desc"
+      },
+      include: {
+        genMarketplaces: {
+          take: 1,
+          include: {
+            device: {
+              select: {
+                serial: true,
+                personName: true,
+                redesSociales: true,
+              }
+            }
+          }
+        }
       }
     });
-
-    // Mapeamos para que la UI no se rompa (si antes esperaba genMarketplace)
-    // O simplemente devolvemos BotOrders. 
-    // La UI de marketplace ya está usando campos compartidos.
 
     return JSON.parse(JSON.stringify(publications));
   } catch (error) {

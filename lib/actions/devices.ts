@@ -11,8 +11,26 @@ export async function getDevices() {
   const devices = await prisma.device.findMany({
     orderBy: { createdAt: "desc" },
   });
-  
   return JSON.parse(JSON.stringify(devices));
+}
+
+// Nueva función para obtener dispositivos válidos (LIBRE y con WA + FB) para el OrdersClient
+export async function getAvailableWaFbDevices() {
+  const session = await getSession();
+  if (!session) return [];
+
+  const allFreeDevices = await prisma.device.findMany({
+    where: { status: "LIBRE" },
+  });
+
+  const validDevices = allFreeDevices.filter((d: any) => {
+    if (!Array.isArray(d.redesSociales)) return false;
+    const hasWa = d.redesSociales.some((r: any) => r.red_social === 'whatsapp');
+    const hasFb = d.redesSociales.some((r: any) => r.red_social === 'facebook');
+    return hasWa && hasFb;
+  });
+
+  return JSON.parse(JSON.stringify(validDevices));
 }
 
 export async function createDevice(data: {

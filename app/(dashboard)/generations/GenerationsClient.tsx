@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { updateGenMarketplace, deleteGenMarketplace, updateBotOrderStatus } from "@/lib/actions/generations";
+import { updateGenMarketplace, deleteGenMarketplace, updateBotOrderStatus, updateOnlyOrderStatus } from "@/lib/actions/generations";
 import { cancelBotOrder, deleteBotOrder, retryMissingBots } from "@/lib/actions/orders";
 import { toast } from "sonner";
 import { useProjectStore } from "@/hooks/use-project-store";
@@ -62,12 +62,25 @@ interface Generation {
   device: {
     serial: string;
     personName: string | null;
+    redesSociales?: any;
   } | null;
 }
 
 const formatPrice = (price: any) => {
   const num = Number(price?.$numberDecimal || price) || 0;
   return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+};
+
+const getWhatsAppPhone = (redesSociales: any) => {
+  if (!Array.isArray(redesSociales)) return null;
+  const wa = redesSociales.find((r: any) => r?.red_social === "whatsapp");
+  return wa?.telefono_asociado || wa?.user || null;
+};
+
+const getFacebookUser = (redesSociales: any) => {
+  if (!Array.isArray(redesSociales)) return null;
+  const fb = redesSociales.find((r: any) => r?.red_social === "facebook");
+  return fb?.user || null;
 };
 
 const statusLabel: Record<string, string> = {
@@ -231,6 +244,24 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
     });
   };
 
+  // Cambia solo el estado de la BotOrder (no toca GenMarketplace)
+  const handleChangeOnlyOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      setOrderActionLoading(orderId + "-order");
+      await updateOnlyOrderStatus(orderId, newStatus);
+      setGenerations(prev => prev.map(g =>
+        g.orderId === orderId
+          ? { ...g, botOrder: { ...g.botOrder, status: newStatus } }
+          : g
+      ));
+      toast.success(`Orden: ${newStatus}`);
+    } catch (err) {
+      toast.error("Error al cambiar estado de la orden");
+    } finally {
+      setOrderActionLoading(null);
+    }
+  };
+
   const handleRetryMissingBots = async (orderId: string) => {
     try {
       setOrderActionLoading(orderId);
@@ -335,7 +366,8 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
           const TypeIcon = typeConfig.icon;
           return (
             <div key={order.id} className="border border-border bg-card group overflow-hidden shadow-sm">
-              <div className="bg-muted/30 p-5 border-b border-border flex flex-wrap items-center justify-between gap-4">
+              {/* ── FILA 1: Identidad + Estado de la ORDEN (BotOrder.status) ── */}
+              <div className="bg-muted/30 px-5 pt-5 pb-4 border-b border-border/50 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="size-12 bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
                     <TypeIcon className={`size-6 ${typeConfig.color}`} />
@@ -351,35 +383,93 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                     </div>
                   </div>
                 </div>
+                {/* Controles del estado de la ORDEN */}
                 <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setViewingSpecsOrder({ ...order, quantity: gens.length })}
-                    className="h-10 px-5 bg-blue-600/10 border border-blue-500/30 text-blue-500 hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2 cursor-pointer group/eye"
-                    title="Ver Especificaciones Originales"
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 mr-1">Estado Orden:</span>
+                  <button
+                    onClick={() => handleChangeOnlyOrderStatus(order.id, "GENERADA")}
+                    disabled={orderActionLoading === order.id + "-order" || order.status === "GENERADA"}
+                    className="h-8 px-3 border border-green-500/30 text-green-500 hover:bg-green-500 hover:text-white text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Marcar orden como Publicada"
                   >
-                    <Eye className="size-4 group-hover/eye:scale-110 transition-transform" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Ver Detalles</span>
+                    <CheckCircle2 className="size-3" /> Publicada
                   </button>
-
-                  {(order.status === "LISTA" || order.status === "GENERANDO") ? (
-                    <button onClick={() => handleChangeOrderStatus(order.id, "PAUSADA")} className="h-10 px-5 bg-amber-500 hover:bg-amber-400 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer"><Pause className="size-4 fill-current" /> Pausar</button>
-                  ) : order.status === "PAUSADA" ? (
-                    <button onClick={() => handleChangeOrderStatus(order.id, "LISTA")} className="h-10 px-5 bg-green-600 hover:bg-green-500 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer"><Play className="size-4 fill-current" /> Reanudar</button>
-                  ) : null}
-                  
+                  <button
+                    onClick={() => handleChangeOnlyOrderStatus(order.id, "PAUSADA")}
+                    disabled={orderActionLoading === order.id + "-order" || order.status === "PAUSADA"}
+                    className="h-8 px-3 border border-amber-500/30 text-amber-500 hover:bg-amber-500 hover:text-white text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Marcar orden como Pausada"
+                  >
+                    <Pause className="size-3" /> Pausada
+                  </button>
+                  <button
+                    onClick={() => handleChangeOnlyOrderStatus(order.id, "CANCELADA")}
+                    disabled={orderActionLoading === order.id + "-order" || order.status === "CANCELADA"}
+                    className="h-8 px-3 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Marcar orden como Cancelada"
+                  >
+                    <Ban className="size-3" /> Cancelada
+                  </button>
                   {order.quantity > gens.length && (
                     <button 
                       onClick={() => handleRetryMissingBots(order.id)} 
                       disabled={orderActionLoading === order.id}
-                      className="h-10 px-5 bg-blue-600 text-white hover:bg-blue-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-600/20"
+                      className="h-8 px-3 bg-blue-600 text-white hover:bg-blue-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-30"
                     >
-                      {orderActionLoading === order.id ? <RefreshCw className="size-4 animate-spin" /> : <RefreshCw className="size-4" />} Reintentar Faltantes ({order.quantity - gens.length})
+                      {orderActionLoading === order.id ? <RefreshCw className="size-3 animate-spin" /> : <RefreshCw className="size-3" />} Reintentar Faltantes ({order.quantity - gens.length})
                     </button>
                   )}
-
-                  <button onClick={() => handleCancelOrder(order.id)} disabled={order.status === "CANCELADA"} className="h-10 px-5 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer"><Ban className="size-4" /> Cancelar Todo</button>
-                  <button onClick={() => handleDeleteOrder(order.id)} className="h-10 w-10 border border-border flex items-center justify-center hover:bg-red-500 hover:text-white transition-all cursor-pointer"><Trash2 className="size-4" /></button>
+                  <button 
+                    onClick={() => {
+                      const mainGenWithDevice = gens.find((g) => !!g.device);
+                      const mainDevice = mainGenWithDevice?.device || null;
+                      const mainDeviceRedes = mainDevice ? (mainDevice as any).redesSociales : null;
+                      setViewingSpecsOrder({
+                        ...order,
+                        quantity: gens.length,
+                        mainDevice,
+                        mainDevicePhone: mainDevice ? getWhatsAppPhone(mainDeviceRedes) : null,
+                        mainDeviceFacebook: mainDevice ? getFacebookUser(mainDeviceRedes) : null,
+                      });
+                    }}
+                    className="h-8 px-3 bg-blue-600/10 border border-blue-500/30 text-blue-500 hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                    title="Ver Especificaciones Originales"
+                  >
+                    <Eye className="size-3" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Ver Detalles</span>
+                  </button>
+                  <button onClick={() => handleDeleteOrder(order.id)} className="h-8 w-8 border border-border flex items-center justify-center hover:bg-red-500 hover:text-white transition-all cursor-pointer" title="Eliminar orden permanentemente"><Trash2 className="size-3" /></button>
                 </div>
+              </div>
+
+              {/* ── FILA 2: Acciones bulk sobre los BOTS (GenMarketplace) ── */}
+              <div className="bg-muted/10 px-5 py-3 border-b border-border flex flex-wrap items-center gap-2">
+                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 mr-2">Acciones Bots:</span>
+                {/* Pausar Todo — pausa los GenMarketplace PENDIENTES */}
+                <button
+                  onClick={() => handleChangeOrderStatus(order.id, "PAUSADA")}
+                  disabled={orderActionLoading === order.id || order.status === "CANCELADA"}
+                  className="h-8 px-4 bg-amber-500/10 border border-amber-500/30 text-amber-500 hover:bg-amber-500 hover:text-white text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <Pause className="size-3 fill-current" /> Pausar Todo
+                </button>
+                {/* Reanudar Todo — activa los GenMarketplace PAUSADOS */}
+                <button
+                  onClick={() => handleChangeOrderStatus(order.id, "LISTA")}
+                  disabled={orderActionLoading === order.id || order.status === "CANCELADA"}
+                  className="h-8 px-4 bg-green-600/10 border border-green-600/30 text-green-500 hover:bg-green-600 hover:text-white text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <Play className="size-3 fill-current" /> Reanudar Todo
+                </button>
+                {/* Cancelar Todo — cancela la orden + los GenMarketplace pendientes */}
+                <button
+                  onClick={() => handleCancelOrder(order.id)}
+                  disabled={orderActionLoading === order.id || order.status === "CANCELADA"}
+                  className="h-8 px-4 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <Ban className="size-3" /> Cancelar Todo
+                </button>
+
               </div>
 
               <div className="p-0 overflow-x-auto">
@@ -412,7 +502,7 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                           </td>
                           <td className="px-6 py-6">
                             <div className="flex items-center gap-3">
-                              <div className="size-8 bg-blue-500/5 flex items-center justify-center border border-blue-500/10">
+                              <div className="size-8 bg-blue-500/5 flex items-center justify-center border border-blue-500/10 shrink-0">
                                 <Smartphone className="size-4 text-blue-500" />
                               </div>
                               <div className="flex flex-col">
@@ -420,9 +510,33 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                                   {gen.device?.serial || "SIN ASIGNAR"}
                                 </span>
                                 {gen.device?.personName && (
-                                  <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tight">
+                                  <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tight mb-1.5">
                                     A Cargo: {gen.device.personName}
                                   </span>
+                                )}
+                                {gen.device?.redesSociales && Array.isArray(gen.device.redesSociales) && (
+                                  <div className="flex items-center gap-2 mt-0.5 pt-1.5 border-t border-border">
+                                    {(() => {
+                                      const wa = gen.device.redesSociales.find((r:any) => r.red_social === 'whatsapp');
+                                      const fb = gen.device.redesSociales.find((r:any) => r.red_social === 'facebook');
+                                      return (
+                                        <>
+                                          {wa && (
+                                            <div className="flex items-center gap-1" title="WhatsApp">
+                                              <span className="text-[8px] font-black bg-emerald-500/10 text-emerald-500 px-1 py-0.5">WA</span>
+                                              <span className="text-[9px] font-mono font-bold text-foreground opacity-80">{wa.telefono_asociado || wa.user || "S/N"}</span>
+                                            </div>
+                                          )}
+                                          {fb && (
+                                            <div className="flex items-center gap-1" title="Facebook">
+                                              <span className="text-[8px] font-black bg-blue-500/10 text-blue-500 px-1 py-0.5">FB</span>
+                                              <span className="text-[9px] font-bold text-foreground opacity-80 truncate max-w-[80px]">{fb.user || "N/A"}</span>
+                                            </div>
+                                          )}
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -598,6 +712,40 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                              </p>
                           </div>
                        </div>
+
+                       {viewingSpecsOrder.mainDevice && (
+                         <div className="bg-muted/10 border border-white/5 p-5 space-y-3">
+                           <div className="flex items-center gap-2 text-blue-500">
+                             <Bot className="size-3" />
+                             <span className="text-[10px] font-black uppercase tracking-widest">Bot Principal Asignado</span>
+                           </div>
+                           <div className="space-y-1">
+                             <p className="text-sm font-black uppercase tracking-tight text-foreground">
+                               {(viewingSpecsOrder.mainDevice.personName || viewingSpecsOrder.mainDevice.serial || "SIN ASIGNAR")}
+                             </p>
+                             {(viewingSpecsOrder.mainDevicePhone || viewingSpecsOrder.mainDeviceFacebook) && (
+                              <div className="flex flex-col gap-1.5 pt-2">
+                                {viewingSpecsOrder.mainDevicePhone && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[9px] font-black bg-emerald-500/10 text-emerald-500 px-1 py-0.5">WA</span>
+                                    <span className="text-[11px] font-mono font-black text-emerald-500 tracking-tight">
+                                      {viewingSpecsOrder.mainDevicePhone}
+                                    </span>
+                                  </div>
+                                )}
+                                {viewingSpecsOrder.mainDeviceFacebook && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[9px] font-black bg-blue-500/10 text-blue-500 px-1 py-0.5">FB</span>
+                                    <span className="text-[11px] font-bold text-foreground/80 truncate">
+                                      {viewingSpecsOrder.mainDeviceFacebook}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                           </div>
+                         </div>
+                       )}
                     </div>
                  </div>
 
@@ -717,14 +865,39 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
                   <div className="text-[8px] font-black uppercase opacity-60">Estado de Ejecución</div>
                 </div>
                 <div className="p-4 bg-muted/5 border border-white/5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Smartphone className="size-5 text-blue-500" />
+                  <div className="flex items-center gap-4">
+                    <Smartphone className="size-6 text-blue-500 shrink-0" />
                     <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-foreground uppercase">{viewingGen.device?.serial || "SIN ASIGNAR"}</span>
-                      <span className="text-[8px] font-bold text-muted-foreground uppercase">{viewingGen.device?.personName || "Operador Desconocido"}</span>
+                      <span className="text-[11px] font-black text-foreground uppercase">{viewingGen.device?.serial || "SIN ASIGNAR"}</span>
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase">{viewingGen.device?.personName || "Operador Desconocido"}</span>
+                      
+                      {viewingGen.device?.redesSociales && Array.isArray(viewingGen.device.redesSociales) && (
+                        <div className="flex items-center gap-3 mt-2">
+                          {(() => {
+                            const wa = viewingGen.device.redesSociales.find((r:any) => r.red_social === 'whatsapp');
+                            const fb = viewingGen.device.redesSociales.find((r:any) => r.red_social === 'facebook');
+                            return (
+                              <>
+                                {wa && (
+                                  <div className="flex items-center gap-1.5" title="WhatsApp">
+                                    <span className="text-[9px] font-black bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 border border-emerald-500/20">WA</span>
+                                    <span className="text-[10px] font-mono font-bold text-foreground opacity-80">{wa.telefono_asociado || wa.user || "S/N"}</span>
+                                  </div>
+                                )}
+                                {fb && (
+                                  <div className="flex items-center gap-1.5" title="Facebook">
+                                    <span className="text-[9px] font-black bg-blue-500/10 text-blue-500 px-1.5 py-0.5 border border-blue-500/20">FB</span>
+                                    <span className="text-[10px] font-bold text-foreground opacity-80 truncate">{fb.user || "N/A"}</span>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="text-[8px] font-black uppercase opacity-60">Dispositivo/Bot</div>
+                  <div className="text-[8px] font-black uppercase opacity-60 self-start mt-1">Dispositivo/Bot</div>
                 </div>
               </div>
 

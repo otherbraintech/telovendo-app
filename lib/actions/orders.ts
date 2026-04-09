@@ -81,7 +81,9 @@ export async function getOrdersByProject(projectId: string) {
       userId: session.user.id 
     },
     include: {
-      genMarketplaces: true,
+      genMarketplaces: {
+        include: { device: true },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -97,7 +99,7 @@ export async function getOrdersByProject(projectId: string) {
         const updated = await prisma.botOrder.update({
           where: { id: order.id },
           data: { status: "GENERADA" },
-          include: { genMarketplaces: true }
+          include: { genMarketplaces: { include: { device: true } } }
         });
         return updated;
       }
@@ -185,16 +187,23 @@ export async function sendOrderToBots(orderId: string) {
   let devicesToAssign: any[] = [];
 
   // Modo automático: buscar devices libres
-  const freeDevices = await prisma.device.findMany({
+  const allFreeDevices = await prisma.device.findMany({
     where: { status: "LIBRE" },
-    take: botCount,
   });
 
-  if (freeDevices.length === 0) {
-    throw new Error("No hay dispositivos LIBRES disponibles en este momento. Inténtelo más tarde.");
+  // Filtrar dispositivos que tengan cuenta de WhatsApp y Facebook
+  const validDevices = allFreeDevices.filter((d: any) => {
+    if (!Array.isArray(d.redesSociales)) return false;
+    const hasWa = d.redesSociales.some((r: any) => r.red_social === 'whatsapp');
+    const hasFb = d.redesSociales.some((r: any) => r.red_social === 'facebook');
+    return hasWa && hasFb;
+  });
+
+  if (validDevices.length === 0) {
+    throw new Error("No hay dispositivos LIBRES con cuentas de WhatsApp y Facebook disponibles en este momento.");
   }
   
-  devicesToAssign = freeDevices;
+  devicesToAssign = validDevices.slice(0, botCount);
   const assignCount = devicesToAssign.length;
 
   // 3. Generar variantes IA de título y descripción
@@ -227,6 +236,11 @@ export async function sendOrderToBots(orderId: string) {
       // Los demás usan las variantes generadas por IA
       const title = i === 0 ? (order.listingTitle || order.orderName) : (variants[i-1]?.title || variants[0]?.title);
       const description = i === 0 ? (order.listingDescription || "") : (variants[i-1]?.description || variants[0]?.description);
+      
+      // Añadir número de contacto
+      const waAccount = Array.isArray(device.redesSociales) ? (device.redesSociales as any[]).find((r: any) => r.red_social === "whatsapp") : null;
+      const botPhone = (waAccount?.telefono_asociado || waAccount?.user) || "";
+      const descriptionWithContact = botPhone ? `${description.trim()}\n\n📲 Contacto: ${botPhone}` : description;
 
       await tx.genMarketplace.create({
         data: {
@@ -234,7 +248,7 @@ export async function sendOrderToBots(orderId: string) {
           userId: session.user.id,
           deviceId: device.id,
           genTitle: title,
-          genDescription: description,
+          genDescription: descriptionWithContact,
           imageUrls: order.imageUrls, // Las imágenes son las mismas para todos
           status: "PAUSADO", // Se crea pausado para que el usuario inicie manualmente
         },
@@ -347,14 +361,22 @@ export async function retryMissingBots(orderId: string) {
     throw new Error("La orden ya tiene la cantidad completa de bots asignados.");
   }
 
-  // 2. Buscar devices libres necesarios
-  const freeDevices = await prisma.device.findMany({
+  // Modo automático: buscar devices libres con WhatsApp y Facebook
+  const allFreeDevices = await prisma.device.findMany({
     where: { status: "LIBRE" },
-    take: missingCount,
   });
 
+  const validDevices = allFreeDevices.filter((d: any) => {
+    if (!Array.isArray(d.redesSociales)) return false;
+    const hasWa = d.redesSociales.some((r: any) => r.red_social === 'whatsapp');
+    const hasFb = d.redesSociales.some((r: any) => r.red_social === 'facebook');
+    return hasWa && hasFb;
+  });
+
+  const freeDevices = validDevices.slice(0, missingCount);
+
   if (freeDevices.length === 0) {
-    throw new Error("No hay nuevos dispositivos LIBRES en este momento.");
+    throw new Error("No hay dispositivos libres con WhatsApp y Facebook en este momento para completar la orden.");
   }
 
   const assignCount = freeDevices.length;
@@ -384,13 +406,18 @@ export async function retryMissingBots(orderId: string) {
       const title = variants[i]?.title || variants[0]?.title || order.listingTitle || order.orderName;
       const description = variants[i]?.description || variants[0]?.description || order.listingDescription || "";
 
+      // Añadir número de contacto
+      const waAccount = Array.isArray(device.redesSociales) ? (device.redesSociales as any[]).find((r: any) => r.red_social === "whatsapp") : null;
+      const botPhone = (waAccount?.telefono_asociado || waAccount?.user) || "";
+      const descriptionWithContact = botPhone ? `${description.trim()}\n\n📲 Contacto: ${botPhone}` : description;
+
       await tx.genMarketplace.create({
         data: {
           orderId: order.id,
           userId: session.user.id,
           deviceId: device.id,
           genTitle: title,
-          genDescription: description,
+          genDescription: descriptionWithContact,
           imageUrls: order.imageUrls,
           status: "PAUSADO", // Se crea pausado para que el usuario inicie manualmente
         },
