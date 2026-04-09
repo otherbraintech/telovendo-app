@@ -211,7 +211,7 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
 
       {/* DETAIL DIALOG */}
       <Dialog open={!!selectedPub} onOpenChange={(open) => !open && setSelectedPub(null)}>
-        <DialogContent className="sm:max-w-none w-[95vw] md:max-w-5xl lg:max-w-6xl p-0 bg-card border-border rounded-none gap-0 overflow-y-auto custom-scrollbar md:overflow-hidden max-h-[90vh] md:h-auto border-none shadow-[0_0_100px_rgba(0,0,0,0.5)]">
+        <DialogContent className="sm:max-w-none w-[95vw] md:max-w-5xl lg:max-w-6xl p-0 bg-card border-border rounded-none gap-0 overflow-y-auto custom-scrollbar md:overflow-hidden max-h-[90vh] md:h-auto border-none shadow-[0_0_100px_rgba(0,0,0,0.5)] data-[state=open]:animate-none data-[state=closed]:animate-none">
           <DialogHeader className="sr-only">
              <DialogTitle>{selectedPub?.listingTitle}</DialogTitle>
              <DialogDescription>{selectedPub?.listingDescription}</DialogDescription>
