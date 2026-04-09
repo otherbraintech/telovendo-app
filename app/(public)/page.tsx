@@ -20,15 +20,26 @@ import {
   Headphones, 
   Zap, 
   Hammer, 
-  Camera 
+  Camera,
+  Wand2,
+  Cpu,
+  Globe,
+  Rocket
 } from "lucide-react";
 import { getPublicPublications } from "@/lib/actions/public";
 import { getSession } from "@/lib/auth-utils";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 export const metadata: Metadata = {
   title: "TeloVendo | Marketplace Global & Gestión de Bots",
   description: "La plataforma definitiva para comprar y vender vehículos, inmuebles y tecnología con orquestación inteligente de bots. Encuentra las mejores ofertas hoy.",
-  keywords: ["marketplace", "bolivia", "comprar", "vender", "vehiculos", "inmuebles", "tecnología", "bots"],
+  keywords: ["marketplace", "bolivia", "comprar", "vender", "vehículos", "inmuebles", "tecnología", "bots"],
 };
 
 const formatPrice = (price: any) => {
@@ -41,9 +52,22 @@ export default async function LandingPage() {
   const isAuthenticated = !!session;
   
   const recentItems = await getPublicPublications();
-  const displayItems = recentItems.slice(0, 4);
+  const displayItems = recentItems.slice(0, 3);
+  
   return (
     <div className="relative w-full overflow-hidden flex flex-col items-center">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          animation: marquee 35s linear infinite;
+        }
+        .marquee-container:hover .animate-marquee {
+          animation-play-state: paused;
+        }
+      `}} />
       {/* GLOBAL TECH BACKGROUND SYSTEM (Spans entire page) */}
       <div className="absolute inset-0 z-0 pointer-events-none select-none">
          {/* Modern Dotted Grid */}
@@ -102,8 +126,8 @@ export default async function LandingPage() {
 
       <div className="relative z-10 flex flex-col items-center max-w-7xl mx-auto px-6 w-full">
       {/* Full-screen Hero Section */}
-      <section className="flex flex-col items-center justify-center min-h-[85svh] w-full py-20 text-center relative overflow-visible">
-        <div className="space-y-4 mb-16 relative z-10 transition-all duration-700">
+      <section className="flex flex-col items-center justify-center min-h-[75svh] w-full py-12 text-center relative overflow-visible">
+        <div className="space-y-4 mb-12 relative z-10 transition-all duration-700">
           <div className="space-y-4">
             <div className="flex justify-center mb-4 animate-blur-fade">
               <img src="/iconTeloVendo.svg" alt="TeloVendo Icon" className="w-40 h-40 md:w-48 md:h-48 dark:invert" />
@@ -113,131 +137,260 @@ export default async function LandingPage() {
             </h1>
             <div className="w-full max-w-full px-4 mx-auto">
               <p className="text-xs md:text-sm text-neutral-500 font-bold tracking-[0.2em] uppercase animate-blur-fade [animation-delay:0.3s] opacity-0 break-words max-w-2xl mx-auto" style={{ animationFillMode: "forwards" }}>
-                Tu próximo destino de compras. Encuentra vehículos, inmuebles y más.
+                Tu próximo destino de compras. Encuentra articulos, vehiculos e inmuebles.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-5 w-[85%] md:w-full max-w-xs md:max-w-2xl mx-auto animate-blur-fade [animation-delay:0.5s] opacity-0 relative z-20" style={{ animationFillMode: "forwards" }}>
+        <div className="flex flex-col md:flex-row gap-5 w-full max-w-xl mx-auto animate-blur-fade [animation-delay:0.5s] opacity-0 relative z-20" style={{ animationFillMode: "forwards" }}>
           <Link 
             href="/marketplace" 
-            className="flex-1 h-20 md:h-24 px-8 rounded-none bg-blue-600 text-white hover:bg-blue-700 font-black text-base md:text-xl uppercase italic tracking-tighter transition-all active:scale-[0.98] shadow-xl hover:shadow-[0_0_50px_rgba(37,99,235,0.4)] flex items-center justify-center gap-5 group border-b-4 border-blue-800 hover:border-blue-400"
+            className="flex-1 py-4 font-black tracking-tighter uppercase italic leading-none px-6 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-bold text-base uppercase tracking-wide transition-all active:scale-[0.98] shadow-lg hover:shadow-[0_0_30px_rgba(37,99,235,0.4)] flex items-center justify-center gap-3 group"
           >
-            <ShoppingBag className="size-7 md:size-8 transition-transform group-hover:-rotate-12 group-hover:scale-110" />
-            <div className="flex flex-col items-start leading-none pt-1">
-              <span>Explorar</span>
-              <span className="text-[9px] md:text-[10px] opacity-70 normal-case font-black tracking-[0.2em] mt-1">Marketplace Global</span>
-            </div>
+            <ShoppingBag className="size-5 transition-transform group-hover:-rotate-12 group-hover:scale-110" />
+            <span>Explorar</span>
           </Link>
 
           {isAuthenticated ? (
             <Link 
               href="/dashboard" 
-              className="flex-1 h-20 md:h-24 px-8 rounded-none bg-neutral-100 dark:bg-black/40 backdrop-blur-md border border-neutral-300 dark:border-white/10 text-neutral-900 dark:text-white/90 hover:bg-neutral-950 hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white font-black text-base md:text-xl uppercase italic tracking-tighter transition-all active:scale-[0.98] flex items-center justify-center gap-5 group shadow-xl"
+              className="flex-1 py-4 px-6 font-black tracking-tighter uppercase italic leading-none rounded-lg bg-neutral-100 dark:bg-black/40 backdrop-blur-md border border-neutral-300 dark:border-white/10 text-neutral-900 dark:text-white/90 hover:bg-neutral-900 hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white font-bold text-base uppercase tracking-wide transition-all active:scale-[0.98] flex items-center justify-center gap-3 group shadow-lg"
             >
-              <LayoutDashboard className="size-7 md:size-8 text-blue-600 dark:text-blue-500 transition-transform group-hover:rotate-12" />
-              <div className="flex flex-col items-start leading-none pt-1">
-                <span>Dashboard</span>
-                <span className="text-[9px] md:text-[10px] opacity-50 dark:opacity-40 normal-case font-black tracking-[0.2em] mt-1">Control Maestro</span>
-              </div>
+              <LayoutDashboard className="size-5 text-blue-600 dark:text-blue-500 transition-transform group-hover:rotate-12" />
+              <span>Dashboard</span>
             </Link>
           ) : (
             <Link 
               href="/login" 
-              className="flex-1 h-20 md:h-24 px-8 rounded-none bg-neutral-100 dark:bg-black/40 backdrop-blur-md border border-neutral-300 dark:border-white/10 text-neutral-900 dark:text-white/90 hover:bg-neutral-950 hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white font-black text-base md:text-xl uppercase italic tracking-tighter transition-all active:scale-[0.98] flex items-center justify-center gap-5 group shadow-xl"
+              className="flex-1 py-4 px-6 rounded-lg bg-neutral-100 dark:bg-black/40 backdrop-blur-md border border-neutral-300 dark:border-white/10 text-neutral-900 dark:text-white/90 hover:bg-neutral-900 hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white font-bold text-base uppercase tracking-wide transition-all active:scale-[0.98] flex items-center justify-center gap-3 group shadow-lg"
             >
-              <Tag className="size-7 md:size-8 text-blue-600 dark:text-blue-500 transition-transform group-hover:scale-125" />
-              <div className="flex flex-col items-start leading-none pt-1">
-                <span>Publicar</span>
-                <span className="text-[9px] md:text-[10px] opacity-50 dark:opacity-40 normal-case font-black tracking-[0.2em] mt-1">Vender Ahora</span>
-              </div>
+              <Tag className="size-5 text-blue-600 dark:text-blue-500 transition-transform group-hover:scale-125" />
+              <span>Publicar</span>
             </Link>
           )}
         </div>
       </section>
 
-      {/* Featured Categories */}
-      <section className="w-full pb-32 space-y-16 relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-border pb-8">
-            <div className="space-y-2">
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500">¿Qué necesitas hoy?</span>
-              <h2 className="text-3xl md:text-4xl font-black tracking-tighter italic uppercase leading-none">Explora Categorías</h2>
+      {/* VALUE PROPOSITION SECTION */}
+      <section className="w-full py-12 md:py-16 space-y-12 relative z-10 border-t border-border/40">
+        <div className="flex flex-col items-center text-center space-y-4 mb-8">
+          <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.5em] text-blue-500 animate-pulse">Tecnología de Vanguardia</span>
+          <h2 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter leading-tight">
+            Orquestación <span className="text-blue-500">Inteligente</span>
+          </h2>
+          <p className="text-muted-foreground text-xs md:text-sm font-bold uppercase tracking-widest max-w-xl">
+            La combinación perfecta entre Inteligencia Artificial y Automatización para dominar el mercado.
+          </p>
+        </div>
+
+        {/* MOBILE: INFINITE MARQUEE */}
+        <div className="md:hidden marquee-container overflow-hidden w-full relative py-4">
+          <div className="flex animate-marquee w-fit gap-6 px-4">
+            {/* Set 1 */}
+            <div className="w-72 group space-y-6 p-8 bg-card/50 backdrop-blur-sm border border-border/50 hover:border-blue-500/40 transition-all duration-500 relative overflow-hidden shrink-0">
+              <div className="absolute -left-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
+                <Wand2 className="size-32 text-blue-500" />
+              </div>
+              <div className="size-12 bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
+                <Wand2 className="size-6 text-blue-500" />
+              </div>
+              <div className="space-y-3 relative z-10">
+                <h3 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Visión Artificial</h3>
+                <p className="text-[10px] text-muted-foreground font-bold leading-relaxed tracking-wide group-hover:text-foreground transition-colors uppercase whitespace-normal">
+                  Subes una foto y nuestra IA genera títulos, descripciones y sugiere el precio óptimo.
+                </p>
+              </div>
             </div>
-            <Link href="/marketplace" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-blue-500 transition-colors flex items-center gap-2">
-               Ver Todo el Marketplace <ArrowRight className="size-3" />
-            </Link>
+
+            <div className="w-72 group space-y-6 p-8 bg-card/50 backdrop-blur-sm border border-border/50 hover:border-cyan-500/40 transition-all duration-500 relative overflow-hidden shrink-0">
+              <div className="absolute -left-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
+                <Cpu className="size-32 text-cyan-500" />
+              </div>
+              <div className="size-12 bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 group-hover:scale-110 transition-transform">
+                <Cpu className="size-6 text-cyan-500" />
+              </div>
+              <div className="space-y-3 relative z-10">
+                <h3 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Red de Bots</h3>
+                <p className="text-[10px] text-muted-foreground font-bold leading-relaxed tracking-wide group-hover:text-foreground transition-colors uppercase whitespace-normal">
+                  Despacha tus publicaciones a través de una flota de bots en múltiples cuentas.
+                </p>
+              </div>
+            </div>
+
+            <div className="w-72 group space-y-6 p-8 bg-card/50 backdrop-blur-sm border border-border/50 hover:border-amber-500/40 transition-all duration-500 relative overflow-hidden shrink-0">
+              <div className="absolute -left-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
+                <Rocket className="size-32 text-amber-500" />
+              </div>
+              <div className="size-12 bg-amber-500/10 flex items-center justify-center border border-amber-500/20 group-hover:scale-110 transition-transform">
+                <Rocket className="size-6 text-amber-500" />
+              </div>
+              <div className="space-y-3 relative z-10">
+                <h3 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Variantes</h3>
+                <p className="text-[10px] text-muted-foreground font-bold leading-relaxed tracking-wide group-hover:text-foreground transition-colors uppercase whitespace-normal">
+                  Creamos variantes optimizadas para saturar el mercado y estar siempre visible.
+                </p>
+              </div>
+            </div>
+
+            {/* Set 2 - Duplicate for mobile seamless loop */}
+            <div className="w-72 group space-y-6 p-8 bg-card/50 backdrop-blur-sm border border-border/50 hover:border-blue-500/40 transition-all duration-500 relative overflow-hidden shrink-0">
+              <div className="absolute -left-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
+                <Wand2 className="size-32 text-blue-500" />
+              </div>
+              <div className="size-12 bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
+                <Wand2 className="size-6 text-blue-500" />
+              </div>
+              <div className="space-y-3 relative z-10">
+                <h3 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Visión Artificial</h3>
+                <p className="text-[10px] text-muted-foreground font-bold leading-relaxed tracking-wide group-hover:text-foreground transition-colors uppercase whitespace-normal">
+                  Subes una foto y nuestra IA genera títulos, descripciones y sugiere el precio óptimo.
+                </p>
+              </div>
+            </div>
+
+            <div className="w-72 group space-y-6 p-8 bg-card/50 backdrop-blur-sm border border-border/50 hover:border-cyan-500/40 transition-all duration-500 relative overflow-hidden shrink-0">
+              <div className="absolute -left-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
+                <Cpu className="size-32 text-cyan-500" />
+              </div>
+              <div className="size-12 bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 group-hover:scale-110 transition-transform">
+                <Cpu className="size-6 text-cyan-500" />
+              </div>
+              <div className="space-y-3 relative z-10">
+                <h3 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Red de Bots</h3>
+                <p className="text-[10px] text-muted-foreground font-bold leading-relaxed tracking-wide group-hover:text-foreground transition-colors uppercase whitespace-normal">
+                  Despacha tus publicaciones a través de una flota de bots en múltiples cuentas.
+                </p>
+              </div>
+            </div>
+
+            <div className="w-72 group space-y-6 p-8 bg-card/50 backdrop-blur-sm border border-border/50 hover:border-amber-500/40 transition-all duration-500 relative overflow-hidden shrink-0">
+              <div className="absolute -left-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
+                <Rocket className="size-32 text-amber-500" />
+              </div>
+              <div className="size-12 bg-amber-500/10 flex items-center justify-center border border-amber-500/20 group-hover:scale-110 transition-transform">
+                <Rocket className="size-6 text-amber-500" />
+              </div>
+              <div className="space-y-3 relative z-10">
+                <h3 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Variantes</h3>
+                <p className="text-[10px] text-muted-foreground font-bold leading-relaxed tracking-wide group-hover:text-foreground transition-colors uppercase whitespace-normal">
+                  Creamos variantes optimizadas para saturar el mercado y estar siempre visible.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 w-full max-w-6xl mx-auto">
-          <Link href="/marketplace" className="group bg-card border border-border p-6 md:p-10 hover:border-blue-500/30 transition-all duration-500 shadow-sm relative overflow-hidden cursor-pointer">
-             <div className="absolute -right-10 -bottom-10 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
-                <Car className="size-32 md:size-48 text-blue-500" />
-             </div>
-             <Car className="w-6 h-6 text-blue-500 mb-6 group-hover:scale-110 transition-transform" />
-             <div className="space-y-2">
-                <div className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">Vehículos</div>
-                <div className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">Autos, Motos y más</div>
-             </div>
-          </Link>
+        {/* DESKTOP: STATIC GRID */}
+        <div className="hidden md:grid md:grid-cols-3 gap-8 md:gap-12 w-full max-w-6xl mx-auto px-4">
+          <div className="group space-y-6 p-8 bg-card/50 backdrop-blur-sm border border-border/50 hover:border-blue-500/40 transition-all duration-500 relative overflow-hidden">
+            <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
+              <Wand2 className="size-32 text-blue-500" />
+            </div>
+            <div className="size-12 bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
+              <Wand2 className="size-6 text-blue-500" />
+            </div>
+            <div className="space-y-3 relative z-10">
+              <h3 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Visión Artificial</h3>
+              <p className="text-[11px] text-muted-foreground font-bold leading-relaxed tracking-wide group-hover:text-foreground transition-colors uppercase">
+                Subes una foto y nuestra IA genera títulos ganadores, descripciones persuasivas y sugiere el precio óptimo basándose en tendencias globales.
+              </p>
+            </div>
+          </div>
 
-          <Link href="/marketplace" className="group bg-card border border-border p-6 md:p-10 hover:border-emerald-500/30 transition-all duration-500 shadow-sm relative overflow-hidden cursor-pointer">
-             <div className="absolute -right-10 -bottom-10 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
-                <Home className="size-32 md:size-48 text-emerald-500" />
-             </div>
-             <Home className="w-6 h-6 text-emerald-500 mb-6 group-hover:scale-110 transition-transform" />
-             <div className="space-y-2">
-                <div className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">Inmuebles</div>
-                <div className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">Ventas y Alquileres</div>
-             </div>
-          </Link>
+          <div className="group space-y-6 p-8 bg-card/50 backdrop-blur-sm border border-border/50 hover:border-cyan-500/40 transition-all duration-500 relative overflow-hidden">
+            <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
+              <Cpu className="size-32 text-cyan-500" />
+            </div>
+            <div className="size-12 bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 group-hover:scale-110 transition-transform">
+              <Cpu className="size-6 text-cyan-500" />
+            </div>
+            <div className="space-y-3 relative z-10">
+              <h3 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Red de Bots</h3>
+              <p className="text-[11px] text-muted-foreground font-bold leading-relaxed tracking-wide group-hover:text-foreground transition-colors uppercase">
+                Despacha tus publicaciones a través de una flota de bots dedicados que operan en múltiples cuentas de Marketplace simultáneamente.
+              </p>
+            </div>
+          </div>
 
-          <Link href="/marketplace" className="group bg-card border border-border p-6 md:p-10 hover:border-amber-500/30 transition-all duration-500 shadow-sm relative overflow-hidden cursor-pointer sm:col-span-2 md:col-span-1">
-             <div className="absolute -right-10 -bottom-10 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
-                <Smartphone className="size-32 md:size-48 text-amber-500" />
-             </div>
-             <Smartphone className="w-6 h-6 text-amber-500 mb-6 group-hover:scale-110 transition-transform" />
-             <div className="space-y-2">
-                <div className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">Electrónica</div>
-                <div className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">Tecnología de punta</div>
-             </div>
-          </Link>
+          <div className="group space-y-6 p-8 bg-card/50 backdrop-blur-sm border border-border/50 hover:border-amber-500/40 transition-all duration-500 relative overflow-hidden">
+            <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity duration-700">
+              <Rocket className="size-32 text-amber-500" />
+            </div>
+            <div className="size-12 bg-amber-500/10 flex items-center justify-center border border-amber-500/20 group-hover:scale-110 transition-transform">
+              <Rocket className="size-6 text-amber-500" />
+            </div>
+            <div className="space-y-3 relative z-10">
+              <h3 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Variantes Masivas</h3>
+              <p className="text-[11px] text-muted-foreground font-bold leading-relaxed tracking-wide group-hover:text-foreground transition-colors uppercase">
+                Creamos docenas de variantes optimizadas de un solo producto para saturar el mercado y garantizar que tu oferta esté siempre visible.
+              </p>
+            </div>
+          </div>
         </div>
+      </section>
 
-        {/* RECENT ITEMS DISPLAY */}
+      {/* RECENT ITEMS DISPLAY */}
+      <section className="w-full pb-12 space-y-6 relative z-10">
         {displayItems.length > 0 && (
-          <div className="pt-20 space-y-12 animate-blur-fade [animation-delay:0.8s] opacity-0" style={{ animationFillMode: "forwards" }}>
-             <div className="space-y-2 text-center md:text-left">
+          <div className="pt-0 space-y-6 animate-blur-fade [animation-delay:0.8s] opacity-0" style={{ animationFillMode: "forwards" }}>
+             <div className="space-y-1 text-center md:text-left">
                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500">Novedades</span>
-                <h3 className="text-2xl font-black italic uppercase tracking-tighter">Publicaciones Recientes</h3>
+                <h3 className="text-xl font-black italic uppercase tracking-tighter">Publicaciones Recientes</h3>
              </div>
              
-             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {displayItems.map((item: any) => (
-                  <Link 
-                    key={item.id} 
-                    href="/marketplace" 
-                    className="group bg-card border border-border overflow-hidden hover:border-blue-500/40 transition-all duration-300"
-                  >
-                    <div className="aspect-square bg-muted relative overflow-hidden">
-                       <img 
-                         src={item.imageUrls?.[0] || "/iconTeloVendo.svg"} 
-                         className={`size-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110 ${!item.imageUrls?.[0] ? 'opacity-10 scale-50' : ''}`}
-                         alt={item.listingTitle} 
-                       />
-                       <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md text-[8px] font-black italic uppercase text-white tracking-widest border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
-                         {item.listingCategory?.replace(/_/g, ' ')}
+             <Carousel className="w-full">
+                <CarouselContent className="-ml-4">
+                   {displayItems.map((item: any) => (
+                     <CarouselItem key={item.id} className="pl-4 basis-[70%] sm:basis-1/2 md:basis-1/4">
+                       <Link 
+                         href="/marketplace" 
+                         className="group block bg-card border border-border overflow-hidden hover:border-blue-500/40 transition-all duration-300 h-full"
+                       >
+                         <div className="aspect-square bg-muted relative overflow-hidden">
+                            <img 
+                              src={item.imageUrls?.[0] || "/iconTeloVendo.svg"} 
+                              className={`size-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110 ${!item.imageUrls?.[0] ? 'opacity-10 scale-50' : ''}`}
+                              alt={item.listingTitle} 
+                            />
+                            <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md text-[8px] font-black italic uppercase text-white tracking-widest border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {item.listingCategory?.replace(/_/g, ' ')}
+                            </div>
+                         </div>
+                         <div className="p-4 space-y-1">
+                            <div className="text-[11px] font-black text-blue-500 tracking-tighter">
+                               {item.listingCurrency === "DOLAR" ? "$" : "Bs"} {formatPrice(item.listingPrice)}
+                            </div>
+                            <h4 className="text-[10px] font-bold uppercase tracking-tight text-foreground truncate">{item.listingTitle || item.orderName}</h4>
+                         </div>
+                       </Link>
+                     </CarouselItem>
+                   ))}
+
+                   {/* EXPLORE MORE CARD ITEM */}
+                   <CarouselItem className="pl-4 basis-[70%] sm:basis-1/2 md:basis-1/4">
+                     <Link 
+                       href="/marketplace" 
+                       className="group bg-black dark:bg-blue-600 border border-neutral-800 dark:border-blue-500 overflow-hidden hover:bg-neutral-900 dark:hover:bg-blue-700 transition-all duration-300 flex flex-col items-center justify-center p-6 text-center space-y-4 shadow-xl shadow-black/10 dark:shadow-blue-500/10 h-full aspect-square"
+                     >
+                       <div className="size-12 bg-white/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                         <ArrowRight className="size-6 text-white" />
                        </div>
-                    </div>
-                    <div className="p-4 space-y-1">
-                       <div className="text-[11px] font-black text-blue-500 tracking-tighter">
-                          {item.listingCurrency === "DOLAR" ? "$" : "Bs"} {formatPrice(item.listingPrice)}
+                       <div className="space-y-1">
+                         <h4 className="text-xs font-black uppercase italic tracking-tighter text-white">Explorar Todo</h4>
+                         <p className="text-[9px] font-bold uppercase text-white/70 tracking-widest">Marketplace completo</p>
                        </div>
-                       <h4 className="text-[10px] font-bold uppercase tracking-tight text-foreground truncate">{item.listingTitle || item.orderName}</h4>
-                    </div>
-                  </Link>
-                ))}
-             </div>
+                     </Link>
+                   </CarouselItem>
+                </CarouselContent>
+                
+                {/* NAVIGATION ARROWS */}
+                <div className="hidden md:flex items-center gap-2 absolute top-0 right-0 -translate-y-12">
+                   <CarouselPrevious className="static translate-y-0" />
+                   <CarouselNext className="static translate-y-0" />
+                </div>
+                {/* Mobile indicators or just simple scroll is enough, but shadcn arrows work if placed correctly */}
+             </Carousel>
           </div>
         )}
       </section>

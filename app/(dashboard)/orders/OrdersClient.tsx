@@ -4,7 +4,7 @@ import { useProjectStore } from "@/hooks/use-project-store"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Search, Filter, ShoppingBag, Loader2, ImagePlus, X, MoreVertical, Copy, Trash2, Edit, ChevronLeft, ChevronRight, Wand2, Sparkles, Bot, ExternalLink, Box, Car, Home, PenLine, Package, CheckCircle2, Clock, AlertCircle, ArrowRight, GripVertical, Plus, ChevronDown, Activity, Zap, LayoutDashboard } from "lucide-react"
 import { useEffect, useState, useMemo, memo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import Link from "next/link"
 import { getOrdersByProject, updateBotOrder, sendOrderToBots, createBotOrder, cancelBotOrder, deleteBotOrder } from "@/lib/actions/orders"
 import { getProjects } from "@/lib/actions/projects"
@@ -1111,7 +1111,7 @@ export default function OrdersClient() {
       {/* CREATION MODAL */}
       {isCreating && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-2xl p-0 md:p-8 flex items-start md:items-center justify-center overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) setIsCreating(false) }}>
-          <div className="relative w-full max-w-5xl h-auto bg-card border border-white/5 shadow-[0_0_80px_rgba(37,99,235,0.1)] animate-in fade-in zoom-in-95 duration-500 flex flex-col md:flex-row md:max-h-[90vh] md:overflow-hidden">
+          <div className="relative w-full max-w-5xl h-auto bg-card border border-white/5 shadow-[0_0_80px_rgba(37,99,235,0.1)] flex flex-col md:flex-row md:max-h-[90vh] md:overflow-hidden">
              <button onClick={() => setIsCreating(false)} className="absolute top-4 right-4 size-10 bg-white/5 flex items-center justify-center hover:bg-red-500 text-white transition-all z-[70] border border-white/10 group active:scale-90 cursor-pointer"><X className="size-5 group-hover:rotate-90 transition-transform duration-300" /></button>
              
              {creationStep === "CHOICE" ? (
@@ -1860,19 +1860,12 @@ export default function OrdersClient() {
       )}
 
       {/* CONFIRM DISPATCH MODAL */}
-      <AnimatePresence>
-        {isConfirmingDispatch && selectedOrder && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+      {isConfirmingDispatch && selectedOrder && (
+          <div 
             className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 md:p-6"
             onClick={() => setIsConfirmingDispatch(false)}
           >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            <div 
               className="bg-card border border-white/10 w-full max-w-lg shadow-[0_0_100px_rgba(37,99,235,0.2)] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
@@ -1939,10 +1932,9 @@ export default function OrdersClient() {
                   </button>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
     </div>
   );
 }

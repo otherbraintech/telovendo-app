@@ -67,6 +67,23 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
     return wa?.telefono_asociado || wa?.user || null;
   };
 
+  const handleContact = (pub: any) => {
+    const phoneNumber = getBotPhoneNumber(pub);
+    if (!phoneNumber) return;
+
+    // Clean phone number (remove +, spaces, etc)
+    let cleanPhone = phoneNumber.replace(/\D/g, "");
+    
+    // Ensure prefix 591 (Bolivia)
+    if (!cleanPhone.startsWith("591")) {
+      cleanPhone = `591${cleanPhone}`;
+    }
+
+    const message = encodeURIComponent(`Hola, estoy interesado en tu publicación de TeloVendo: "${pub.listingTitle}"`);
+    
+    window.open(`https://wa.me/${cleanPhone}?text=${message}`, "_blank");
+  };
+
   const conditionLabels: Record<string, string> = {
     "NUEVO": "Nuevo",
     "USADO_COMO_NUEVO": "Usado - Como Nuevo",
@@ -359,7 +376,11 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
                 </div>
 
                 <div className="pt-8 flex flex-col gap-4">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-none h-14 font-black text-xs tracking-[0.3em] uppercase transition-all shadow-xl shadow-blue-500/20 active:scale-95">
+                  <Button 
+                    onClick={() => handleContact(selectedPub)}
+                    disabled={!getBotPhoneNumber(selectedPub)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-none h-14 font-black text-xs tracking-[0.3em] uppercase transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-50"
+                  >
                     Contactar Vendedor
                     <ShoppingCart className="size-4 ml-3" />
                   </Button>
