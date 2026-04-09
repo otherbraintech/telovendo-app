@@ -137,19 +137,36 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
     return Object.values(ordersMap);
   }, [filtered]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!editingGen || !e.target.files) return;
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setEditingGen({
-          ...editingGen,
-          imageUrls: [...editingGen.imageUrls, base64String]
+      const toastId = toast.loading("Verificando seguridad de la imagen...");
+      try {
+        const { analyzeImageSecurity } = await import("@/lib/actions/ai");
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
         });
-      };
-      reader.readAsDataURL(file);
+
+        const result = await analyzeImageSecurity(base64);
+        if (result.safe) {
+          setEditingGen({
+            ...editingGen,
+            imageUrls: [...editingGen.imageUrls, base64]
+          });
+          toast.success("Imagen segura", { id: toastId });
+        } else {
+          toast.error("⚠️ ADVERTENCIA DE SEGURIDAD", { 
+            id: toastId,
+            description: "No se permiten imágenes con números de teléfono o códigos QR. Por favor, sube una imagen limpia.",
+            duration: 6000,
+          });
+        }
+      } catch (err) {
+        toast.error("Error al validar imagen", { id: toastId });
+      }
     }
   };
 

@@ -237,11 +237,27 @@ export default function OrdersClient() {
     return () => clearInterval(interval);
   }, [selectedOrder, isEditing, editingMixedImages.length]);
 
+  const handleRemoveImage = (idx: number) => {
+    const urls = editForm.imageUrls || [];
+    if (idx < urls.length) {
+      const newUrls = urls.filter((_: any, i: number) => i !== idx);
+      setEditForm({ ...editForm, imageUrls: newUrls });
+    } else {
+      const fileIdx = idx - urls.length;
+      setEditSelectedFiles(prev => prev.filter((_, i) => i !== fileIdx));
+    }
+    
+    if (activeImageIndex === idx) {
+      setActiveImageIndex(Math.max(0, idx - 1));
+    } else if (activeImageIndex > idx) {
+      setActiveImageIndex(activeImageIndex - 1);
+    }
+  }
+
   const handleEditFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       
-      // Validación básica del lado del cliente (sin Server Action para evitar 500 en Vercel)
       const validFiles = files.filter(file => {
         const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
         if (!validTypes.includes(file.type) && !file.type.startsWith('image/')) {
@@ -257,13 +273,48 @@ export default function OrdersClient() {
 
       if (validFiles.length === 0) return;
 
-      const oldImagesLength = editingMixedImages.length;
-      setEditSelectedFiles(prev => [...prev, ...validFiles]);
-      setActiveImageIndex(oldImagesLength);
+      setIsVerifyingImage(true);
+      const toastId = toast.loading("Analizando seguridad de imágenes...");
       
-      // Si es un vehículo y no hay datos, intentar analizar con IA
-      if (editForm.listingType === "VEHICULO" && !editForm.listingTitle && validFiles.length > 0) {
-        handleAutoDetectVehicle(validFiles[0]);
+      try {
+        const analyzedFiles: File[] = [];
+        const { analyzeImageSecurity } = await import("@/lib/actions/ai");
+
+        for (const file of validFiles) {
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+          });
+          
+          const result = await analyzeImageSecurity(base64);
+          if (result.safe) {
+            analyzedFiles.push(file);
+          } else {
+            toast.error("⚠️ ADVERTENCIA DE SEGURIDAD", { 
+              description: "No se permiten imágenes que incluyan números de teléfono, WhatsApp o códigos QR. El sistema añadirá automáticamente tu contacto de bot. Por favor, usa una imagen limpia.",
+              duration: 6000,
+            });
+          }
+        }
+        
+        if (analyzedFiles.length > 0) {
+          const oldImagesLength = editingMixedImages.length;
+          setEditSelectedFiles(prev => [...prev, ...analyzedFiles]);
+          setActiveImageIndex(oldImagesLength);
+          
+          // Si es un vehículo y no hay datos, intentar analizar con IA
+          if (editForm.listingType === "VEHICULO" && !editForm.listingTitle) {
+            handleAutoDetectVehicle(analyzedFiles[0]);
+          }
+          toast.success("Imágenes analizadas correctamente", { id: toastId });
+        } else {
+          toast.dismiss(toastId);
+        }
+      } catch (err) {
+        toast.error("Error al validar imágenes", { id: toastId });
+      } finally {
+        setIsVerifyingImage(false);
       }
     }
   }
@@ -1149,14 +1200,24 @@ export default function OrdersClient() {
              ) : (
                <div className="flex-1 flex flex-col md:flex-row md:overflow-hidden">
                  <div className="w-full md:w-[45%] bg-muted/20 flex flex-col border-b md:border-b-0 md:border-r border-border p-4 md:p-6 shrink-0 md:overflow-y-auto custom-scrollbar">
-                    <div className="relative aspect-square w-full bg-black/20 flex items-center justify-center overflow-hidden border border-border shadow-inner group/preview">
-                      {editingMixedImages.length > 0 ? (
-                        <FilePreview file={editingMixedImages[activeImageIndex] || editingMixedImages[0]} className="w-full h-full object-contain" />
-                      ) : (
-                        <div className="text-center p-8"><ShoppingBag className="size-20 mx-auto text-muted-foreground/5 animate-pulse" /><p className="text-[10px] font-black uppercase text-muted-foreground/30 mt-4 tracking-widest">Subir Imagen Principal</p></div>
-                      )}
-                    </div>
-                    {editingMixedImages.length > 1 && (
+                     <div className="relative aspect-square w-full bg-black/20 flex items-center justify-center overflow-hidden border border-border shadow-inner group/preview">
+                       {editingMixedImages.length > 0 ? (
+                         <>
+                           <FilePreview file={editingMixedImages[activeImageIndex] || editingMixedImages[0]} className="w-full h-full object-contain" />
+                           <button 
+                             type="button"
+                             onClick={(e) => { e.stopPropagation(); handleRemoveImage(activeImageIndex); }}
+                             className="absolute top-4 right-4 size-10 bg-red-600 text-white flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-all z-30 shadow-2xl hover:bg-black cursor-pointer border border-white/10"
+                             title="Quitar esta imagen"
+                           >
+                             <Trash2 className="size-5" />
+                           </button>
+                         </>
+                       ) : (
+                         <div className="text-center p-8"><ShoppingBag className="size-20 mx-auto text-muted-foreground/5 animate-pulse" /><p className="text-[10px] font-black uppercase text-muted-foreground/30 mt-4 tracking-widest">Subir Imagen Principal</p></div>
+                       )}
+                     </div>
+                    {editingMixedImages.length > 0 && (
                       <div className="bg-background/20 mt-4 p-3 border border-border/50 flex items-center gap-3 overflow-x-auto scrollbar-hide">
                         {editingMixedImages.map((img: any, idx: number) => (
                           <div
@@ -1172,6 +1233,13 @@ export default function OrdersClient() {
                               className={`size-16 shrink-0 border-2 transition-all cursor-move ${activeImageIndex === idx ? 'border-blue-500 scale-105 shadow-2xl z-10' : 'border-transparent opacity-40 hover:opacity-100'}`}
                             >
                               <FilePreview file={img} className="w-full h-full object-cover" />
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleRemoveImage(idx); }}
+                              className="absolute -top-1 -right-1 size-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-30 shadow-lg hover:bg-red-600 scale-0 group-hover:scale-100"
+                            >
+                              <X className="size-3" />
                             </button>
                             {idx === 0 && (
                               <div className="absolute -top-2 -left-2 bg-blue-600 text-white text-[7px] font-black uppercase px-1.5 py-0.5 z-20 shadow-lg">Portada</div>
@@ -1489,6 +1557,16 @@ export default function OrdersClient() {
                     {editingMixedImages.length > 0 ? (
                       <>
                         <FilePreview file={editingMixedImages[activeImageIndex] || editingMixedImages[0]} className="w-full h-full object-contain" />
+                        {isEditing && (
+                           <button 
+                             type="button"
+                             onClick={(e) => { e.stopPropagation(); handleRemoveImage(activeImageIndex); }}
+                             className="absolute top-4 right-4 size-10 bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-30 shadow-2xl hover:bg-black cursor-pointer border border-white/10"
+                             title="Quitar esta imagen"
+                           >
+                             <Trash2 className="size-5" />
+                           </button>
+                        )}
                         {editingMixedImages.length > 1 && !isEditing && (
                           <>
                             <button 
@@ -1504,7 +1582,7 @@ export default function OrdersClient() {
                       </>
                     ) : (<div className="text-center p-8"><ShoppingBag className="size-20 mx-auto text-muted-foreground/10" /><p className="text-[10px] font-black uppercase text-muted-foreground/30 mt-4 tracking-widest">Multimedia</p></div>)}
                   </div>
-                  {editingMixedImages.length > 1 && (
+                  {editingMixedImages.length > 0 && (
                       <div className="bg-background/20 mt-4 p-3 border border-border/50 flex items-center gap-3 overflow-x-auto scrollbar-hide">
                         {editingMixedImages.map((img: string | File, idx: number) => (
                           <div 
@@ -1526,8 +1604,9 @@ export default function OrdersClient() {
                             )}
                             {isEditing && (
                               <button 
-                                onClick={(e) => { e.stopPropagation(); const target = editingMixedImages[idx]; if (typeof target === 'string') { setEditForm({ ...editForm, imageUrls: editForm.imageUrls.filter((url: string) => url !== target) }); } else { setEditSelectedFiles(prev => prev.filter(f => f !== target)); } setActiveImageIndex(0); }} 
-                                className="absolute -top-1.5 -right-1.5 bg-red-500 text-white size-5 flex items-center justify-center rounded-none z-20 shadow-xl active:scale-95 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleRemoveImage(idx); }} 
+                                className="absolute -top-1 -right-1 size-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-30 shadow-lg hover:bg-red-600 scale-0 group-hover:scale-100 cursor-pointer"
                               >
                                 <X className="size-3" />
                               </button>
