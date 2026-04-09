@@ -1,7 +1,9 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { OrderStatus } from "@prisma/client";
 import { getSession } from "@/lib/auth-utils";
+import { revalidatePath } from "next/cache";
 
 export async function getGenerations() {
   const session = await getSession();
@@ -69,7 +71,7 @@ export async function updateBotOrderStatus(orderId: string, status: any) {
 }
 
 // Solo actualiza el status de la orden (BotOrder) sin afectar los GenMarketplace
-export async function updateOnlyOrderStatus(orderId: string, status: string) {
+export async function updateOnlyOrderStatus(orderId: string, status: OrderStatus) {
   const session = await getSession();
   if (!session) throw new Error("No session");
 
@@ -78,6 +80,7 @@ export async function updateOnlyOrderStatus(orderId: string, status: string) {
     data: { status },
   });
 
+  revalidatePath("/generations");
   return JSON.parse(JSON.stringify(updated));
 }
 

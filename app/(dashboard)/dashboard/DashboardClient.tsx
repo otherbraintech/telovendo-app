@@ -31,15 +31,16 @@ export default function DashboardClient({ stats }: { stats: any }) {
         </h1>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
           <p className="text-[10px] font-mono uppercase tracking-widest sm:tracking-[0.5em] text-blue-500/70">
-            Bots: <span className="text-cyan-400 font-black">Online</span>
+            {(() => {
+              const hour = new Date().getHours();
+              if (hour < 12) return "Buenos días";
+              if (hour < 19) return "Buenas tardes";
+              return "Buenas noches";
+            })()}, <span className="text-cyan-400 font-black">{stats.user?.name?.split(' ')[0] || 'Usuario'}</span>
           </p>
           <div className="h-1 w-1 bg-blue-500/20 rounded-full hidden sm:block" />
           <p className="text-[10px] font-mono uppercase tracking-widest sm:tracking-[0.5em] text-cyan-500/70">
-            Nivel: <span className="font-black text-cyan-400 uppercase">Enterprise</span>
-          </p>
-          <div className="h-1 w-1 bg-blue-500/20 rounded-full hidden sm:block" />
-          <p className="text-[10px] font-mono uppercase tracking-widest sm:tracking-[0.5em] text-emerald-500/70">
-            Dispositivos: <span className="font-black text-emerald-400">{stats.devices.free} Libres</span>
+            Membresía: <span className="font-black text-cyan-400 uppercase">Profesional</span>
           </p>
         </div>
       </motion.div>
@@ -59,7 +60,7 @@ export default function DashboardClient({ stats }: { stats: any }) {
           href="/projects"
         />
         <DashboardCard
-          title="Tasa de Éxito"
+          title="Efectividad"
           value={stats.bots.successRate}
           suffix="%"
           icon={<CheckCircle2 className="size-4 text-emerald-500" />}
@@ -74,7 +75,7 @@ export default function DashboardClient({ stats }: { stats: any }) {
           href="/orders"
         />
         <DashboardCard
-          title="Variantes IA"
+          title="Publicaciones IA"
           value={stats.bots.totalExecutions}
           icon={<Bot className="size-4 text-amber-500" />}
           accent="text-amber-500"
@@ -91,18 +92,18 @@ export default function DashboardClient({ stats }: { stats: any }) {
                     <Zap className="size-20 text-emerald-500" />
                  </div>
                  <div className="space-y-1 relative z-10">
-                    <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Estado Sistemas</span>
-                    <h4 className="text-xl font-black uppercase italic tracking-tighter">Hardware Live</h4>
+                    <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Resumen de Impacto</span>
+                    <h4 className="text-xl font-black uppercase italic tracking-tighter">Visibilidad Mercado</h4>
                  </div>
                  <div className="mt-8 space-y-4 relative z-10">
                     <div className="flex items-center justify-between">
-                       <span className="text-[10px] font-bold uppercase text-muted-foreground">Disponibilidad Global</span>
-                       <span className="text-sm font-black text-emerald-500 tabular-nums">{stats.devices.free} / {stats.devices.total}</span>
+                       <span className="text-[10px] font-bold uppercase text-muted-foreground">Efectividad Global</span>
+                       <span className="text-sm font-black text-emerald-500 tabular-nums">{stats.bots.successRate}% Eficiencia</span>
                     </div>
                     <div className="w-full h-1.5 bg-muted/50 overflow-hidden">
-                       <div className="h-full bg-emerald-500 transition-all duration-1000 shadow-[0_0_10px_#10b981]" style={{ width: `${(stats.devices.free / stats.devices.total) * 100}%` }} />
+                       <div className="h-full bg-emerald-500 transition-all duration-1000 shadow-[0_0_10px_#10b981]" style={{ width: `${stats.bots.successRate}%` }} />
                     </div>
-                    <p className="text-[9px] text-muted-foreground font-medium italic">Protocolo de orquestación optimizado para múltiples terminales.</p>
+                    <p className="text-[9px] text-muted-foreground font-medium italic">Tu cuenta mantiene un nivel de publicación optimizado por inteligencia artificial.</p>
                  </div>
               </motion.div>
 
@@ -139,9 +140,9 @@ export default function DashboardClient({ stats }: { stats: any }) {
 
                <div className="flex justify-between items-start relative z-10">
                  <div className="space-y-3">
-                   <span className="px-3 py-1 bg-blue-500 text-white text-[8px] font-black uppercase tracking-[0.3em]">Protocolo Maestro</span>
+                   <span className="px-3 py-1 bg-blue-500 text-white text-[8px] font-black uppercase tracking-[0.3em]">Asistente Inteligente</span>
                    <h3 className="text-3xl md:text-5xl font-black uppercase text-foreground italic tracking-tighter leading-tight">
-                     Orquestar Nueva<br /><span className="text-blue-500">Publicación</span>
+                     Crear Nueva<br /><span className="text-blue-500">Publicación</span>
                    </h3>
                  </div>
                  <div className="p-3 border border-blue-500/10 group-hover:scale-105 group-hover:rotate-6 transition-all duration-500 bg-blue-500/10 hidden sm:block">
@@ -152,10 +153,10 @@ export default function DashboardClient({ stats }: { stats: any }) {
                <div className="flex items-end justify-between relative z-10 mt-6 md:mt-0">
                  <div className="w-full space-y-3">
                    <p className="text-xs sm:text-[10px] uppercase font-bold tracking-wider sm:tracking-[0.2em] text-muted-foreground leading-relaxed group-hover:text-foreground transition-colors pr-4 sm:pr-0">
-                     Inicia el proceso de despliegue automático en Facebook Marketplace utilizando tus variantes de IA optimizadas.
+                     Inicia el proceso de creación y despliegue en Facebook Marketplace utilizando inteligencia artificial optimizada.
                    </p>
                    <div className="flex items-center gap-2 sm:gap-3 text-[10px] font-black uppercase tracking-widest sm:tracking-[0.4em] text-blue-500 group-hover:text-cyan-400 transition-colors">
-                     Iniciar Despliegue <ArrowUpRight className="size-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                     Iniciar Publicación <ArrowUpRight className="size-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
                    </div>
                  </div>
                </div>
@@ -167,7 +168,7 @@ export default function DashboardClient({ stats }: { stats: any }) {
         <div className="space-y-6">
            <motion.div variants={item} initial="hidden" animate="show" className="bg-card border border-border p-6 flex flex-col justify-between hover:border-blue-500/40 transition-all h-[160px]">
               <div className="space-y-1">
-                 <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Efectividad Bot</span>
+                 <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Alcance de Cuenta</span>
                  <h4 className="text-xl font-black uppercase italic tracking-tighter">Publicaciones</h4>
               </div>
               <div className="mt-4 space-y-2">
@@ -185,7 +186,7 @@ export default function DashboardClient({ stats }: { stats: any }) {
              initial={{ opacity: 0, x: 20 }}
              animate={{ opacity: 1, x: 0 }}
              transition={{ delay: 0.5, duration: 0.8 }}
-             className="bg-card border border-border flex flex-col h-[340px] hover:border-blue-500/40 transition-all duration-500 relative overflow-hidden shadow-sm"
+             className="bg-card border border-border flex flex-col h-auto min-h-[220px] hover:border-blue-500/40 transition-all duration-500 relative overflow-hidden shadow-sm"
            >
              <div className="bg-muted px-6 py-4 border-b border-border flex items-center justify-between shrink-0">
                <h3 className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.3em]">Mis Proyectos</h3>

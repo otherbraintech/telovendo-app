@@ -75,6 +75,10 @@ export async function getDashboardStats() {
   });
 
   return {
+    user: {
+      name: session.user.name,
+      email: session.user.email
+    },
     projects: {
       total: totalProjects,
       recent: recentProjects

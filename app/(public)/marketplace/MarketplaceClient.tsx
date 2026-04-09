@@ -15,9 +15,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Info,
+  Smartphone,
+  LayoutDashboard,
+  Car,
+  Home,
   Clock,
-  ShieldCheck,
-  Smartphone
+  ShieldCheck
 } from "lucide-react";
 import {
   Dialog,
@@ -26,16 +29,26 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMemo } from "react";
 
 export function MarketplaceClient({ publications }: { publications: any[] }) {
   const [selectedPub, setSelectedPub] = useState<any>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("TODOS");
 
-  const filteredPublications = publications.filter((pub: any) => 
-    pub.listingTitle?.toLowerCase().includes(search.toLowerCase()) ||
-    pub.listingCategory?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredPublications = useMemo(() => {
+    return publications.filter((pub: any) => {
+      const matchSearch = !search || 
+        pub.listingTitle?.toLowerCase().includes(search.toLowerCase()) ||
+        pub.listingCategory?.toLowerCase().includes(search.toLowerCase());
+      
+      const matchType = typeFilter === "TODOS" || pub.listingType === typeFilter;
+      
+      return matchSearch && matchType;
+    });
+  }, [publications, search, typeFilter]);
 
   const formatPrice = (price: any) => {
     const num = parseFloat(price?.$numberDecimal || price || "0");
@@ -52,6 +65,13 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
     
     const wa = genMarketplace.device.redesSociales.find((r: any) => r.red_social === "whatsapp");
     return wa?.telefono_asociado || wa?.user || null;
+  };
+
+  const conditionLabels: Record<string, string> = {
+    "NUEVO": "Nuevo",
+    "USADO_COMO_NUEVO": "Usado - Como Nuevo",
+    "USADO_BUENO": "Usado - Bueno",
+    "USADO_REGULAR": "Usado - Regular",
   };
 
   // Auto-progression for images in dialog
@@ -87,14 +107,44 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
               </button>
             )}
          </div>
-         <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center bg-card border border-border/50 shadow-sm p-1 gap-1 w-full md:w-auto">
+              <button 
+                onClick={() => setTypeFilter("TODOS")}
+                className={`flex-1 md:flex-none h-12 px-6 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all border border-transparent cursor-pointer ${typeFilter === 'TODOS' ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-blue-600/10 hover:text-blue-500'}`}
+              >
+                <LayoutDashboard className="size-4" />
+                <span className="inline">TODOS</span>
+              </button>
+              <button 
+                onClick={() => setTypeFilter("ARTICULO")}
+                className={`flex-1 md:flex-none h-12 px-6 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all border border-transparent cursor-pointer ${typeFilter === 'ARTICULO' ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-blue-600/10 hover:text-blue-500'}`}
+              >
+                <Package className="size-4" />
+                <span className="inline">ARTÍCULOS</span>
+              </button>
+              <button 
+                onClick={() => setTypeFilter("VEHICULO")}
+                className={`flex-1 md:flex-none h-12 px-6 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all border border-transparent cursor-pointer ${typeFilter === 'VEHICULO' ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-blue-600/10 hover:text-amber-500'}`}
+              >
+                <Car className="size-4" />
+                <span className="inline">VEHÍCULOS</span>
+              </button>
+              <button 
+                onClick={() => setTypeFilter("PROPIEDAD")}
+                className={`flex-1 md:flex-none h-12 px-6 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all border border-transparent cursor-pointer ${typeFilter === 'PROPIEDAD' ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-blue-600/10 hover:text-emerald-500'}`}
+              >
+                <Home className="size-4" />
+                <span className="inline">INMUEBLES</span>
+              </button>
+          </div>
+          <div className="flex items-center gap-2">
             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
               {filteredPublications.length} Artículos encontrados
             </span>
          </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8">
         {filteredPublications.map((pub: any) => (
           <Card 
             key={pub.id} 
@@ -114,31 +164,31 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
                   <Package className="size-12" />
                 </div>
               )}
-              <div className="absolute top-3 left-3 flex flex-col gap-2">
-                 <Badge className="bg-blue-600 hover:bg-blue-600 text-white border-0 text-[9px] font-black tracking-widest uppercase py-1 px-2 rounded-none">
-                    {pub.listingCondition || "NUEVO"}
+               <div className="absolute top-2 left-2 flex flex-col gap-2">
+                 <Badge className="bg-blue-600/90 hover:bg-blue-600 text-white border-0 text-[8px] md:text-[9px] font-black tracking-widest uppercase py-0.5 px-2 rounded-sm backdrop-blur-sm shadow-xl">
+                    {conditionLabels[pub.listingCondition] || pub.listingCondition || "Nuevo"}
                  </Badge>
               </div>
             </div>
 
-            <CardHeader className="p-5 space-y-3 pb-2">
-              <div className="flex justify-between items-start gap-4">
-                 <h3 className="font-black text-sm md:text-base leading-tight uppercase italic text-foreground/90 group-hover:text-blue-500 transition-colors line-clamp-2">
+            <CardHeader className="p-3 md:p-4 space-y-2 md:space-y-3 pb-0">
+              <div className="flex justify-between items-start gap-2 md:gap-4">
+                 <h3 className="font-bold text-[10px] md:text-sm leading-tight uppercase tracking-tight text-foreground/90 group-hover:text-blue-500 transition-colors line-clamp-2">
                    {pub.listingTitle}
                  </h3>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
-                    <span className="text-xs font-black tracking-tighter">{pub.listingCurrency === "DOLAR" ? "$" : "Bs"}</span>
-                    <span className="text-xl font-black italic tracking-tighter">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                    <span className="text-[10px] md:text-xs font-black tracking-tighter">{pub.listingCurrency === "DOLAR" ? "$" : "Bs"}</span>
+                    <span className="text-sm md:text-lg font-black italic tracking-tighter">
                       {formatPrice(pub.listingPrice)}
                     </span>
                 </div>
                 {(() => {
                   const phoneNumber = getBotPhoneNumber(pub);
                   return phoneNumber ? (
-                    <div className="flex items-center gap-2 text-[9px] font-mono text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors">
-                      <Smartphone className="size-3" />
+                    <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm font-black font-mono text-emerald-600 dark:text-emerald-400">
+                      <Smartphone className="size-3 md:size-4" />
                       <span>{phoneNumber}</span>
                     </div>
                   ) : null;
@@ -146,23 +196,10 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
               </div>
             </CardHeader>
 
-            <CardContent className="p-5 pt-0 flex-grow">
-              <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-3 font-medium opacity-70">
-                 {pub.listingDescription}
-              </p>
-            </CardContent>
-
-            <CardFooter className="p-5 pt-4 border-t border-border/30 flex flex-col gap-3">
-               <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50">
-                    <Tag className="size-3" />
-                    {(pub.listingCategory || "VARIOS").replace(/_/g, ' ')}
-                  </div>
-                  <Info className="size-3 text-blue-500/30 group-hover:text-blue-500 transition-colors" />
-               </div>
+            <CardFooter className="p-3 md:p-4 pt-0 md:pt-0 flex flex-col gap-3">
                <Button 
                 onClick={(e) => { e.stopPropagation(); }}
-                className="w-full bg-foreground text-background hover:bg-blue-600 hover:text-white rounded-none h-10 font-black text-[10px] tracking-[0.2em] uppercase transition-all duration-300 group/btn"
+                className="hidden md:flex w-full bg-foreground text-background hover:bg-blue-600 hover:text-white rounded-none h-9 font-black text-[9px] tracking-[0.2em] uppercase transition-all duration-300 group/btn"
                >
                   Ver en Marketplace
                   <ExternalLink className="size-3 ml-2 transition-transform group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1" />

@@ -27,8 +27,11 @@ import {
   ShoppingCart,
   DollarSign,
   Tag,
-  Bot
+  Bot,
+  Filter,
+  Package
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { updateGenMarketplace, deleteGenMarketplace, updateBotOrderStatus, updateOnlyOrderStatus } from "@/lib/actions/generations";
@@ -98,6 +101,7 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
   const [generations, setGenerations] = useState<Generation[]>(initialGenerations);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("TODOS");
+  const [typeFilter, setTypeFilter] = useState("TODOS");
   const [editingGen, setEditingGen] = useState<Generation | null>(null);
   const [saving, setSaving] = useState<number | null>(null);
   const [orderActionLoading, setOrderActionLoading] = useState<string | null>(null);
@@ -114,8 +118,10 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
         (g.botOrder.listingTitle?.toLowerCase() || "").includes(search.toLowerCase()) ||
         (g.device?.serial.toLowerCase() || "").includes(search.toLowerCase());
       
-      const matchesFilter = filter === "TODOS" || g.status === filter;
-      return matchesSearch && matchesFilter;
+      const matchesStatus = filter === "TODOS" || g.status === filter;
+      const matchesType = typeFilter === "TODOS" || g.botOrder.listingType === typeFilter;
+      
+      return matchesSearch && matchesStatus && matchesType;
     });
   }, [generations, search, filter]);
 
@@ -245,7 +251,7 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
   };
 
   // Cambia solo el estado de la BotOrder (no toca GenMarketplace)
-  const handleChangeOnlyOrderStatus = async (orderId: string, newStatus: string) => {
+  const handleChangeOnlyOrderStatus = async (orderId: string, newStatus: any) => {
     try {
       setOrderActionLoading(orderId + "-order");
       await updateOnlyOrderStatus(orderId, newStatus);
@@ -355,6 +361,58 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3 text-muted-foreground group-focus-within:text-blue-500 transition-colors" />
             <input type="text" placeholder={mode === "detail" ? "Buscar bot..." : "Buscar publicación..."} value={search} onChange={(e) => setSearch(e.target.value)} className="w-48 sm:w-64 bg-card border border-border px-4 py-2 pl-9 text-xs focus:ring-1 focus:ring-blue-500 outline-none text-foreground" />
           </div>
+          {mode !== "detail" && (
+            <>
+            <div className="flex flex-wrap items-center bg-card border border-border shadow-sm p-1 gap-1">
+              <button 
+                onClick={() => setTypeFilter("TODOS")}
+                className={`h-8 px-3 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-wider transition-all border border-transparent cursor-pointer ${typeFilter === 'TODOS' ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-blue-600/10 hover:text-blue-500'}`}
+              >
+                <LayoutDashboard className="size-3" />
+                <span className="hidden sm:inline">TODOS</span>
+              </button>
+              <button 
+                onClick={() => setTypeFilter("ARTICULO")}
+                className={`h-8 px-3 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-wider transition-all border border-transparent cursor-pointer ${typeFilter === 'ARTICULO' ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-blue-600/10 hover:text-blue-500'}`}
+              >
+                <Package className="size-3" />
+                <span className="hidden sm:inline">ARTÍCULOS</span>
+                {typeFilter === 'ARTICULO' && <span className="sm:hidden font-black">🛍️</span>}
+              </button>
+              <button 
+                onClick={() => setTypeFilter("VEHICULO")}
+                className={`h-8 px-3 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-wider transition-all border border-transparent cursor-pointer ${typeFilter === 'VEHICULO' ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-blue-600/10 hover:text-amber-500'}`}
+              >
+                <Car className="size-3" />
+                <span className="hidden sm:inline">VEHÍCULOS</span>
+                {typeFilter === 'VEHICULO' && <span className="sm:hidden font-black">🚗</span>}
+              </button>
+              <button 
+                onClick={() => setTypeFilter("PROPIEDAD")}
+                className={`h-8 px-3 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-wider transition-all border border-transparent cursor-pointer ${typeFilter === 'PROPIEDAD' ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-blue-600/10 hover:text-emerald-500'}`}
+              >
+                <Home className="size-3" />
+                <span className="hidden sm:inline">INMUEBLES</span>
+                {typeFilter === 'PROPIEDAD' && <span className="sm:hidden font-black">🏠</span>}
+              </button>
+            </div>
+              <div className="relative group w-full sm:w-auto">
+                <Select value={filter} onValueChange={setFilter}>
+                  <SelectTrigger className="h-9 w-full sm:w-44 bg-card border border-border pl-9 text-[10px] font-black uppercase tracking-[0.1em] focus:ring-1 focus:ring-blue-500 rounded-none hover:bg-muted/50 transition-all">
+                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+                    <SelectValue placeholder="ESTADO: TODOS" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border rounded-none shadow-2xl animate-in zoom-in-95 duration-200">
+                    <SelectItem value="TODOS" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">TODOS LOS ESTADOS</SelectItem>
+                    <SelectItem value="PENDIENTE" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">PENDIENTE</SelectItem>
+                    <SelectItem value="PUBLICADO" className="text-[10px] font-black uppercase tracking-widest cursor-pointer text-green-500">PUBLICADO</SelectItem>
+                    <SelectItem value="PAUSADO" className="text-[10px] font-black uppercase tracking-widest cursor-pointer text-amber-500">PAUSADO</SelectItem>
+                    <SelectItem value="CANCELADO" className="text-[10px] font-black uppercase tracking-widest cursor-pointer text-red-500">CANCELADO</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

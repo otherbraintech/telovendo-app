@@ -2,7 +2,7 @@
 
 import { useProjectStore } from "@/hooks/use-project-store"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Search, Filter, ShoppingBag, Loader2, ImagePlus, X, MoreVertical, Copy, Trash2, Edit, ChevronLeft, ChevronRight, Wand2, Sparkles, Bot, ExternalLink, Box, Car, Home, PenLine, Package, CheckCircle2, Clock, AlertCircle, ArrowRight, GripVertical, Plus, ChevronDown } from "lucide-react"
+import { Search, Filter, ShoppingBag, Loader2, ImagePlus, X, MoreVertical, Copy, Trash2, Edit, ChevronLeft, ChevronRight, Wand2, Sparkles, Bot, ExternalLink, Box, Car, Home, PenLine, Package, CheckCircle2, Clock, AlertCircle, ArrowRight, GripVertical, Plus, ChevronDown, Activity, Zap, LayoutDashboard } from "lucide-react"
 import { useEffect, useState, useMemo, memo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
@@ -120,6 +120,7 @@ export default function OrdersClient() {
   const [editForm, setEditForm] = useState<any>({})
   const [editSelectedFiles, setEditSelectedFiles] = useState<File[]>([])
   const [filter, setFilter] = useState("TODAS")
+  const [typeFilter, setTypeFilter] = useState("TODOS")
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [improveMenuOpen, setImproveMenuOpen] = useState(false)
   const [touchStart, setTouchStart] = useState<number | null>(null)
@@ -199,10 +200,13 @@ export default function OrdersClient() {
     });
   }, [selectedProjectId]);
 
-  const filteredOrders = useMemo(() => 
-    filter === "TODAS" ? orders : orders.filter(o => o.status === filter),
-    [filter, orders]
-  );
+  const filteredOrders = useMemo(() => {
+    return orders.filter(o => {
+      const matchStatus = filter === "TODAS" || o.status === filter;
+      const matchType = typeFilter === "TODOS" || o.listingType === typeFilter;
+      return matchStatus && matchType;
+    });
+  }, [filter, typeFilter, orders]);
 
   const editingMixedImages = useMemo(() => {
     // Si estamos editando o creando, mezclamos URLs que ya tiene el form con archivos que acabamos de meter
@@ -904,11 +908,44 @@ export default function OrdersClient() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3 text-muted-foreground group-focus-within:text-blue-500 transition-colors" />
               <input type="text" placeholder="Buscar..." className="w-full sm:w-44 lg:w-56 bg-card border border-border px-4 py-2.5 pl-9 text-xs focus:ring-1 focus:ring-blue-500 outline-none text-foreground" />
             </div>
+            <div className="flex flex-wrap items-center bg-card border border-border shadow-sm p-1 gap-1 w-full sm:w-auto">
+              <button 
+                onClick={() => setTypeFilter("TODOS")}
+                className={`h-8 px-3 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-wider transition-all border border-transparent cursor-pointer ${typeFilter === 'TODOS' ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-blue-600/10 hover:text-blue-500'}`}
+              >
+                <LayoutDashboard className="size-3" />
+                <span className="hidden sm:inline">TODOS</span>
+              </button>
+              <button 
+                onClick={() => setTypeFilter("ARTICULO")}
+                className={`h-8 px-3 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-wider transition-all border border-transparent cursor-pointer ${typeFilter === 'ARTICULO' ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-blue-600/10 hover:text-blue-500'}`}
+              >
+                <Package className="size-3" />
+                <span className="hidden sm:inline">ARTÍCULOS</span>
+                {typeFilter === 'ARTICULO' && <span className="sm:hidden font-black">🛍️</span>}
+              </button>
+              <button 
+                onClick={() => setTypeFilter("VEHICULO")}
+                className={`h-8 px-3 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-wider transition-all border border-transparent cursor-pointer ${typeFilter === 'VEHICULO' ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-blue-600/10 hover:text-amber-500'}`}
+              >
+                <Car className="size-3" />
+                <span className="hidden sm:inline">VEHÍCULOS</span>
+                {typeFilter === 'VEHICULO' && <span className="sm:hidden font-black">🚗</span>}
+              </button>
+              <button 
+                onClick={() => setTypeFilter("PROPIEDAD")}
+                className={`h-8 px-3 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-wider transition-all border border-transparent cursor-pointer ${typeFilter === 'PROPIEDAD' ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-blue-600/10 hover:text-emerald-500'}`}
+              >
+                <Home className="size-3" />
+                <span className="hidden sm:inline">INMUEBLES</span>
+                {typeFilter === 'PROPIEDAD' && <span className="sm:hidden font-black">🏠</span>}
+              </button>
+            </div>
             <div className="relative group flex-1 min-w-[140px] sm:min-w-0 sm:flex-none">
               <Select value={filter} onValueChange={setFilter}>
                 <SelectTrigger className="h-10 w-full sm:w-44 bg-card border border-border pl-9 text-[10px] font-black uppercase tracking-[0.1em] focus:ring-1 focus:ring-blue-500 rounded-none hover:bg-muted/50 transition-all">
                   <Filter className="absolute left-3 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
-                  <SelectValue placeholder="FILTRAR POR ESTADO" />
+                  <SelectValue placeholder="ESTADO: TODOS" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border rounded-none shadow-2xl animate-in zoom-in-95 duration-200">
                   <SelectItem value="TODAS" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">TODAS LAS ÓRDENES</SelectItem>
@@ -951,7 +988,7 @@ export default function OrdersClient() {
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 animate-pulse">Sincronizando...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 content-start auto-rows-max">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 content-start auto-rows-max">
            {/* DRAFT CARD */}
            {hasDraft && !isCreating && (
              <div className="group relative bg-blue-600/5 border-2 border-dashed border-blue-500/30 p-6 flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in zoom-in duration-500 min-h-[220px]">
@@ -991,19 +1028,17 @@ export default function OrdersClient() {
                 )}
                 <div className="absolute top-3 left-3 z-10"><span className={`px-2 py-1 text-[8px] font-black uppercase tracking-wider rounded-none shadow-xl backdrop-blur-md border ${order.status === 'CANCELADA' ? 'bg-red-500/80 border-red-500/20 text-white' : order.status === 'LISTA' ? 'bg-amber-500/80 border-amber-500/20 text-white' : order.status === 'GENERANDO' ? 'bg-blue-600 border-blue-500/20 text-white animate-pulse' : 'bg-green-600 border-green-500/20 text-white'}`}>{statusLabel[order.status] ?? order.status}</span></div>
               </div>
-              <div className="p-4 flex flex-col flex-1 gap-2 bg-gradient-to-b from-card to-muted/10">
-                <div className="text-xl font-black text-blue-500 tabular-nums tracking-tighter">
+              <div className="p-2 md:p-4 flex flex-col flex-1 gap-1 md:gap-2 bg-gradient-to-b from-card to-muted/10">
+                <div className="text-sm md:text-xl font-black text-blue-500 tabular-nums tracking-tighter">
                   {order.listingCurrency === "DOLAR" ? "$" : "Bs"} {formatPrice(order.listingPrice)}
                 </div>
-                <h3 className="text-sm font-bold text-foreground line-clamp-1 leading-none uppercase tracking-tight">{order.listingTitle || order.orderName}</h3>
-                <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed opacity-70">{order.listingDescription || "Publicación sin descripción detallada."}</p>
-                <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/50">
-                   <div className="flex flex-col gap-1">
-                     <div className="flex items-center gap-2">
-                       <div className="size-5 bg-blue-500/10 flex items-center justify-center rounded-none border border-blue-500/20">
-                         <Bot className="size-3 text-blue-500" />
-                       </div>
-                       <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">{order.quantity || 1} Bots</span>
+                <h3 className="text-[10px] md:text-sm font-bold text-foreground line-clamp-1 leading-none uppercase tracking-tight">{order.listingTitle || order.orderName}</h3>
+                <p className="hidden md:block text-[10px] text-muted-foreground line-clamp-2 leading-relaxed opacity-70">{order.listingDescription || "Publicación sin descripción detallada."}</p>
+                <div className="mt-auto pt-3 md:pt-4 flex items-center justify-between border-t border-border/50 gap-3">
+                   <div className="flex flex-col gap-0.5 min-w-0">
+                     <div className="flex items-center gap-1.5 min-w-0">
+                       <Bot className="size-3 text-blue-500 shrink-0" />
+                       <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest truncate">{order.quantity || 1} Bots</span>
                      </div>
                      {(() => {
                        const mainGen = order.genMarketplaces?.find((g: any) => g.device?.redesSociales);
@@ -1011,16 +1046,30 @@ export default function OrdersClient() {
                        const wa = (mainGen.device.redesSociales as any[]).find((r: any) => r.red_social === "whatsapp");
                        const phone = wa?.telefono_asociado || wa?.user;
                        if (!phone) return null;
-                       return <span className="text-[10px] font-bold text-emerald-500 tabular-nums">{phone}</span>;
+                       return (
+                         <div className="flex items-center gap-1.5">
+                           <div className="size-1 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                           <span className="text-[10px] font-bold text-emerald-500 tabular-nums truncate">{phone}</span>
+                         </div>
+                       );
                      })()}
                    </div>
                   {order.status === "LISTA" ? (
-                    <button onClick={(e) => inlineSendToBots(e, order.id)} disabled={saving} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.15em] transition-all flex items-center gap-2 shadow-xl shadow-blue-600/30 active:scale-95">
-                      {saving ? <Loader2 className="size-3 animate-spin"/> : "🚀 Enviar"}
+                    <button 
+                      onClick={(e) => inlineSendToBots(e, order.id)} 
+                      disabled={saving} 
+                      className="h-9 px-4 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-600/20 active:scale-95 shrink-0"
+                    >
+                      {saving ? <Loader2 className="size-3 animate-spin"/> : <><Zap className="size-3 fill-current" /> Enviar</>}
                     </button>
                   ) : (
-                    <Link href={`/generations/${order.id}`} onClick={(e) => e.stopPropagation()} className="bg-muted hover:bg-muted/80 text-foreground border border-border px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.15em] transition-all flex items-center gap-2 shadow-sm active:scale-95">
-                      <ExternalLink className="size-3" /> Ver Ejecución
+                    <Link 
+                      href={`/generations/${order.id}`} 
+                      onClick={(e) => e.stopPropagation()} 
+                      className="h-9 px-4 bg-muted hover:bg-muted/80 text-foreground border border-border text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 shrink-0 group/btn"
+                    >
+                      <Activity className="size-3 text-blue-500 group-hover/btn:animate-pulse" /> 
+                      <span>VER Ejecución</span>
                     </Link>
                   )}
                 </div>
