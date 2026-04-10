@@ -210,8 +210,9 @@ export async function sendOrderToBots(orderId: string) {
 
   order.genMarketplaces.forEach(gm => {
     if (gm.device?.redesSociales && Array.isArray(gm.device.redesSociales)) {
-      const wa = gm.device.redesSociales.find((r: any) => r.red_social === 'whatsapp');
-      const fb = gm.device.redesSociales.find((r: any) => r.red_social === 'facebook');
+      const redes = gm.device.redesSociales as any[];
+      const wa = redes.find((r: any) => r.red_social === 'whatsapp') as any;
+      const fb = redes.find((r: any) => r.red_social === 'facebook') as any;
       if (wa?.telefono_asociado) existingWaPhones.add(wa.telefono_asociado);
       if (wa?.user) existingWaPhones.add(wa.user);
       if (fb?.user) existingFbUsers.add(fb.user);
@@ -421,8 +422,9 @@ export async function retryMissingBots(orderId: string) {
 
   order.genMarketplaces.forEach(gm => {
     if (gm.device?.redesSociales && Array.isArray(gm.device.redesSociales)) {
-      const wa = gm.device.redesSociales.find((r: any) => r.red_social === 'whatsapp');
-      const fb = gm.device.redesSociales.find((r: any) => r.red_social === 'facebook');
+      const redes = gm.device.redesSociales as any[];
+      const wa = redes.find((r: any) => r.red_social === 'whatsapp') as any;
+      const fb = redes.find((r: any) => r.red_social === 'facebook') as any;
       if (wa?.telefono_asociado) existingWaPhones.add(wa.telefono_asociado);
       if (wa?.user) existingWaPhones.add(wa.user);
       if (fb?.user) existingFbUsers.add(fb.user);
