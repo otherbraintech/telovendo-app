@@ -27,6 +27,7 @@ export async function GET(request: Request) {
     take: limit,
     orderBy: { createdAt: "asc" },
     include: {
+      botOrder: true,
       device: {
         select: {
           id: true,
@@ -53,6 +54,24 @@ export async function GET(request: Request) {
     imageUrls: gen.imageUrls,
     createdAt: gen.createdAt,
     updatedAt: gen.updatedAt,
+    // Datos de la publicación (botOrder)
+    listing: {
+      price: gen.botOrder.listingPrice,
+      category: gen.botOrder.listingCategory,
+      condition: gen.botOrder.listingCondition,
+      availability: gen.botOrder.listingAvailability,
+      type: gen.botOrder.listingType,
+      currency: gen.botOrder.listingCurrency,
+      // Si es vehículo
+      vehicleYear: gen.botOrder.vehicleYear,
+      vehicleMake: gen.botOrder.vehicleMake,
+      vehicleModel: gen.botOrder.vehicleModel,
+      vehicleMileage: gen.botOrder.vehicleMileage,
+      // Si es propiedad
+      propRooms: gen.botOrder.propRooms,
+      propBathrooms: gen.botOrder.propBathrooms,
+      propArea: gen.botOrder.propArea,
+    },
     // Device info
     device: gen.device
       ? {
