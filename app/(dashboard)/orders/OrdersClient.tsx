@@ -419,7 +419,14 @@ export default function OrdersClient() {
     if (!editForm.listingTitle) return;
     try {
       setAiLoading("title")
-      let improved = await improveTitle(editForm.listingTitle, editForm.listingCategory)
+      const res = await improveTitle(editForm.listingTitle, editForm.listingCategory)
+      
+      if (!res.success) {
+        toast.error("Error al mejorar título", { description: res.error });
+        return;
+      }
+
+      let improved = res.data || editForm.listingTitle;
       
       // Sanitizar resultado de IA
       improved = improved.replace(FORMAT_CLEAN_REGEX, "");
@@ -433,6 +440,7 @@ export default function OrdersClient() {
       setEditForm((prev: { [key: string]: any }) => ({ ...prev, listingTitle: improved }))
     } catch (error) {
       console.error(error)
+      toast.error("Error técnico al mejorar título");
     } finally {
       setAiLoading(null)
     }
@@ -455,12 +463,19 @@ export default function OrdersClient() {
         }
       }
 
-      let improved = await improveDescription(
+      let res = await improveDescription(
         editForm.listingTitle || "",
         editForm.listingDescription || "",
         editForm.listingCategory,
         botPhoneToPass
       )
+
+      if (!res.success) {
+        toast.error("Error al mejorar descripción", { description: res.error });
+        return;
+      }
+      
+      let improved = res.data || "";
       
       // Sanitizar resultado de IA
       improved = improved.replace(FORMAT_CLEAN_REGEX, "");
@@ -488,15 +503,24 @@ export default function OrdersClient() {
     if (!editForm.listingTitle) return alert("Escribe un título primero para generar la imagen");
     try {
       setAiLoading("image")
-      const url = await generateProductImage(editForm.listingTitle, editForm.listingDescription || "")
+      const res = await generateProductImage(editForm.listingTitle, editForm.listingDescription || "")
+      
+      if (!res.success) {
+        toast.error("Error al generar imagen", { description: res.error });
+        return;
+      }
+
+      const url = res.data!;
       setEditForm((prev: any) => ({
         ...prev,
         imageUrls: [...(prev.imageUrls || []), url]
       }))
       setActiveImageIndex((editForm.imageUrls?.length || 0) + (editSelectedFiles.length || 0))
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
-      alert("Error generando imagen")
+      toast.error("Error técnico al generar imagen", { 
+        description: error.message || "La IA tardó demasiado o el token es inválido." 
+      })
     } finally {
       setAiLoading(null)
     }
@@ -526,23 +550,36 @@ export default function OrdersClient() {
         });
       }
 
-      const improvedUrl = await improveProductImage(
+      const res = await improveProductImage(
         imageSource,
         editForm.listingTitle || "",
         editForm.listingDescription || "",
         type
       );
 
-      setEditForm((prev: any) => ({
-        ...prev,
-        imageUrls: [...(prev.imageUrls || []), improvedUrl],
-      }));
-      setActiveImageIndex(
-        (editForm.imageUrls?.length || 0) + (editSelectedFiles.length || 0)
-      );
-    } catch (error) {
+      if (!res.success) {
+        toast.error("Error al mejorar imagen", { description: res.error });
+        return;
+      }
+
+      const improvedUrl = res.data!;
+      
+      // Reemplazar la imagen en el formulario
+      const newUrls = [...(editForm.imageUrls || [])];
+      if (typeof currentImage === "string") {
+        const idx = newUrls.indexOf(currentImage);
+        if (idx !== -1) newUrls[idx] = improvedUrl;
+      } else {
+        // Si era un archivo local, lo añadimos a imageUrls y lo quitamos de editSelectedFiles
+        newUrls.push(improvedUrl);
+        setEditSelectedFiles(prev => prev.filter(f => f !== currentImage));
+      }
+
+      setEditForm((prev: any) => ({ ...prev, imageUrls: newUrls }));
+      toast.success("Imagen mejorada con éxito ✨");
+    } catch (error: any) {
       console.error(error);
-      alert("Error mejorando la imagen");
+      toast.error("Error técnico al mejorar imagen", { description: error.message });
     } finally {
       setAiLoading(null);
     }
