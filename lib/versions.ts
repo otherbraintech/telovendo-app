@@ -40,7 +40,7 @@ export const RELEASES: ReleaseVersion[] = [
   },
   {
     version: "1.0.0",
-    date: "2026-03-20",
+    date: "2026-03-29",
     title: "Lanzamiento Inicial TeloVendo",
     description: "La plataforma base para la gestión de bot orchestrator en redes sociales.",
     type: "major",
