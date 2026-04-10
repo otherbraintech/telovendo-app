@@ -553,17 +553,15 @@ export default function OrdersClient() {
       }
 
       const improvedUrl = res.data!;
+      
       const newUrls = [...(editForm.imageUrls || [])];
-      if (typeof currentImage === "string") {
-        const idx = newUrls.indexOf(currentImage);
-        if (idx !== -1) newUrls[idx] = improvedUrl;
-      } else {
-        newUrls.push(improvedUrl);
-        setEditSelectedFiles(prev => prev.filter(f => f !== currentImage));
-      }
+      newUrls.push(improvedUrl); // Se añade la nueva sin borrar la original
 
       setEditForm((prev: any) => ({ ...prev, imageUrls: newUrls }));
-      toast.success("Imagen mejorada con éxito ✨");
+      
+      // Actualizamos el índice activo para que se vea la nueva imagen generada
+      setActiveImageIndex(newUrls.length + editSelectedFiles.length - 1);
+      toast.success("Imagen mejorada y añadida a la galería ✨");
     } catch (error: any) {
       console.error(error);
       toast.error("Error técnico al mejorar imagen", { description: error.message });
