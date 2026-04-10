@@ -180,10 +180,22 @@ export async function sendOrderToBots(orderId: string) {
   // 1. Obtener la orden completa
   const order = await prisma.botOrder.findUnique({
     where: { id: orderId, userId: session.user.id },
+    include: {
+      genMarketplaces: {
+        include: { device: true } // Para extraer los teléfonos y users ya usados
+      }
+    }
   });
   if (!order) throw new Error("Orden no encontrada");
 
+  const currentCount = order.genMarketplaces.length;
   let botCount = order.quantity || 1;
+  const missingCount = botCount - currentCount;
+  
+  if (missingCount <= 0) {
+    throw new Error("La orden ya tiene la cantidad completa de bots asignados.");
+  }
+
   let devicesToAssign: any[] = [];
 
   // Modo automático: buscar devices libres
@@ -191,19 +203,44 @@ export async function sendOrderToBots(orderId: string) {
     where: { status: "LIBRE" },
   });
 
-  // Filtrar dispositivos que tengan cuenta de WhatsApp y Facebook
+  // Extraer información de bots ya asignados para evitar repeticiones (por ID o por red social idéntica)
+  const existingDeviceIds = new Set(order.genMarketplaces.map(gm => gm.deviceId).filter(Boolean));
+  const existingWaPhones = new Set();
+  const existingFbUsers = new Set();
+
+  order.genMarketplaces.forEach(gm => {
+    if (gm.device?.redesSociales && Array.isArray(gm.device.redesSociales)) {
+      const wa = gm.device.redesSociales.find((r: any) => r.red_social === 'whatsapp');
+      const fb = gm.device.redesSociales.find((r: any) => r.red_social === 'facebook');
+      if (wa?.telefono_asociado) existingWaPhones.add(wa.telefono_asociado);
+      if (wa?.user) existingWaPhones.add(wa.user);
+      if (fb?.user) existingFbUsers.add(fb.user);
+    }
+  });
+
+  // Filtrar dispositivos que tengan cuenta de WhatsApp y Facebook únicas a la orden
   const validDevices = allFreeDevices.filter((d: any) => {
+    if (existingDeviceIds.has(d.id)) return false; // Evita repetir el ID de bot
+
     if (!Array.isArray(d.redesSociales)) return false;
-    const hasWa = d.redesSociales.some((r: any) => r.red_social === 'whatsapp');
-    const hasFb = d.redesSociales.some((r: any) => r.red_social === 'facebook');
-    return hasWa && hasFb;
+    const wa = d.redesSociales.find((r: any) => r.red_social === 'whatsapp');
+    const fb = d.redesSociales.find((r: any) => r.red_social === 'facebook');
+    
+    if (!wa || !fb) return false;
+
+    // Si ya existe un bot asignado con el mismo whatsapp o facebook (caso donde el usuario duplicó el bot en BD), omitir
+    if (wa.telefono_asociado && existingWaPhones.has(wa.telefono_asociado)) return false;
+    if (wa.user && existingWaPhones.has(wa.user)) return false;
+    if (fb.user && existingFbUsers.has(fb.user)) return false;
+
+    return true;
   });
 
   if (validDevices.length === 0) {
-    throw new Error("No hay dispositivos LIBRES con cuentas de WhatsApp y Facebook disponibles en este momento.");
+    throw new Error("No hay dispositivos LIBRES (sin repetir) con cuentas de WhatsApp y Facebook en este momento.");
   }
   
-  devicesToAssign = validDevices.slice(0, botCount);
+  devicesToAssign = validDevices.slice(0, missingCount);
   const assignCount = devicesToAssign.length;
 
   // 3. Generar variantes IA de título y descripción
@@ -352,9 +389,14 @@ export async function retryMissingBots(orderId: string) {
   await syncDevices().catch(err => console.error("Sync error before retry:", err));
 
   // 1. Obtener orden completa y cantidad actual de generaciones
+  // Obtener la orden con devices incrustados
   const order = await prisma.botOrder.findUnique({
     where: { id: orderId, userId: session.user.id },
-    include: { genMarketplaces: true }
+    include: { 
+      genMarketplaces: {
+        include: { device: true }
+      } 
+    }
   });
   
   if (!order) throw new Error("Orden no encontrada");
@@ -367,16 +409,41 @@ export async function retryMissingBots(orderId: string) {
     throw new Error("La orden ya tiene la cantidad completa de bots asignados.");
   }
 
-  // Modo automático: buscar devices libres con WhatsApp y Facebook
+  // Modo automático: buscar devices libres
   const allFreeDevices = await prisma.device.findMany({
     where: { status: "LIBRE" },
   });
 
+  // Identificar información existente para no duplicar bots
+  const existingDeviceIds = new Set(order.genMarketplaces.map(gm => gm.deviceId).filter(Boolean));
+  const existingWaPhones = new Set();
+  const existingFbUsers = new Set();
+
+  order.genMarketplaces.forEach(gm => {
+    if (gm.device?.redesSociales && Array.isArray(gm.device.redesSociales)) {
+      const wa = gm.device.redesSociales.find((r: any) => r.red_social === 'whatsapp');
+      const fb = gm.device.redesSociales.find((r: any) => r.red_social === 'facebook');
+      if (wa?.telefono_asociado) existingWaPhones.add(wa.telefono_asociado);
+      if (wa?.user) existingWaPhones.add(wa.user);
+      if (fb?.user) existingFbUsers.add(fb.user);
+    }
+  });
+
   const validDevices = allFreeDevices.filter((d: any) => {
+    if (existingDeviceIds.has(d.id)) return false; // Evita repetir el ID de bot
+
     if (!Array.isArray(d.redesSociales)) return false;
-    const hasWa = d.redesSociales.some((r: any) => r.red_social === 'whatsapp');
-    const hasFb = d.redesSociales.some((r: any) => r.red_social === 'facebook');
-    return hasWa && hasFb;
+    const wa = d.redesSociales.find((r: any) => r.red_social === 'whatsapp');
+    const fb = d.redesSociales.find((r: any) => r.red_social === 'facebook');
+    
+    if (!wa || !fb) return false;
+
+    // Bloquear si el bot tiene el mismo whatsapp o facebook de un bot que ya está en la orden
+    if (wa.telefono_asociado && existingWaPhones.has(wa.telefono_asociado)) return false;
+    if (wa.user && existingWaPhones.has(wa.user)) return false;
+    if (fb.user && existingFbUsers.has(fb.user)) return false;
+
+    return true;
   });
 
   const freeDevices = validDevices.slice(0, missingCount);
