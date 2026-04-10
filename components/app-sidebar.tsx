@@ -21,8 +21,10 @@ import {
   ShieldCheck,
   Home,
   Globe,
-  ExternalLink
+  ExternalLink,
+  Rocket
 } from "lucide-react"
+import { CURRENT_VERSION } from "@/lib/versions"
 
 export function AppSidebar({ 
   user, 
@@ -67,6 +69,11 @@ export function AppSidebar({
       title: "Mis Bots en Vivo",
       url: "/generations",
       icon: <Cpu className="size-4 text-purple-500" />,
+    },
+    {
+      title: "Novedades & Releases",
+      url: "/releases",
+      icon: <Rocket className="size-4 text-rose-500" />,
     },
   ];
 
@@ -126,8 +133,9 @@ export function AppSidebar({
           }
         ]} />
 
-        <div className="absolute bottom-24 left-0 w-full px-4 opacity-20 pointer-events-none">
-           <div className="text-[10px] font-mono tracking-widest uppercase">System V1.0</div>
+        <div className="absolute bottom-24 left-0 w-full px-4 opacity-50 pointer-events-none flex items-center justify-between">
+           <div className="text-[9px] font-mono tracking-widest text-muted-foreground uppercase">Bot Orchestrator</div>
+           <div className="text-[9px] font-mono tracking-widest text-blue-500/80 uppercase font-bold">v{CURRENT_VERSION}</div>
         </div>
       </SidebarContent>
 

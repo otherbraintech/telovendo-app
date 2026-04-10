@@ -427,8 +427,6 @@ export default function OrdersClient() {
       }
 
       let improved = res.data || editForm.listingTitle;
-      
-      // Sanitizar resultado de IA
       improved = improved.replace(FORMAT_CLEAN_REGEX, "");
 
       const val = validateTextContent(improved);
@@ -449,7 +447,6 @@ export default function OrdersClient() {
   const handleImproveDescription = async () => {
     try {
       setAiLoading("description")
-      
       let botPhoneToPass = undefined;
       if (availableBots && availableBots.length > 0) {
         let botToDisplay = availableBots[0];
@@ -463,12 +460,12 @@ export default function OrdersClient() {
         }
       }
 
-      let res = await improveDescription(
+      const res = await improveDescription(
         editForm.listingTitle || "",
         editForm.listingDescription || "",
         editForm.listingCategory,
         botPhoneToPass
-      )
+      );
 
       if (!res.success) {
         toast.error("Error al mejorar descripción", { description: res.error });
@@ -476,8 +473,6 @@ export default function OrdersClient() {
       }
       
       let improved = res.data || "";
-      
-      // Sanitizar resultado de IA
       improved = improved.replace(FORMAT_CLEAN_REGEX, "");
 
       const val = validateTextContent(improved);
@@ -486,7 +481,6 @@ export default function OrdersClient() {
         return;
       }
 
-      // Asegurar que el contacto esté presente si la IA lo omitió o no detectó el número
       if (botPhoneToPass && !hasPhoneNumber(improved)) {
         improved = improved.trimEnd() + `\n\n📲 WhatsApp: ${botPhoneToPass}`;
       }
@@ -528,20 +522,16 @@ export default function OrdersClient() {
 
   const handleImproveSelectedImage = async (type: ImproveType = "CLEAN") => {
     const currentImage = editingMixedImages[activeImageIndex];
-    if (!currentImage) {
-      return alert("Selecciona una imagen para mejorarla");
-    }
+    if (!currentImage) return alert("Selecciona una imagen para mejorarla");
 
     try {
       setAiLoading("image");
       setImproveMenuOpen(false);
 
-      // Convertir File local a data URL base64 si es necesario
       let imageSource: string;
       if (typeof currentImage === "string") {
         imageSource = currentImage;
       } else {
-        // Es un File local — convertir a base64 data URL
         imageSource = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
@@ -563,14 +553,11 @@ export default function OrdersClient() {
       }
 
       const improvedUrl = res.data!;
-      
-      // Reemplazar la imagen en el formulario
       const newUrls = [...(editForm.imageUrls || [])];
       if (typeof currentImage === "string") {
         const idx = newUrls.indexOf(currentImage);
         if (idx !== -1) newUrls[idx] = improvedUrl;
       } else {
-        // Si era un archivo local, lo añadimos a imageUrls y lo quitamos de editSelectedFiles
         newUrls.push(improvedUrl);
         setEditSelectedFiles(prev => prev.filter(f => f !== currentImage));
       }

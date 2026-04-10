@@ -210,12 +210,18 @@ export async function sendOrderToBots(orderId: string) {
   let variants: Array<{ title: string; description: string }>;
   try {
     const { generateBotVariants } = await import("@/lib/actions/ai");
-    variants = await generateBotVariants(
+    const aiResult = await generateBotVariants(
       order.listingTitle || order.orderName,
       order.listingDescription || "",
       assignCount,
       order.listingCategory
     );
+    
+    if (aiResult.success && aiResult.data) {
+      variants = aiResult.data;
+    } else {
+      throw new Error(aiResult.error || "No data returned");
+    }
   } catch (err) {
     console.error("Error generating AI variants, using fallback:", err);
     // Fallback: variantes simples
