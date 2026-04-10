@@ -574,7 +574,7 @@ Reglas:
 - Cada título máximo 100 caracteres
 - Cada descripción máximo 500 caracteres  
 - Varía el tono: informal, profesional, entusiasta, directo, etc.
-- Usa emojis diferentes en cada variante
+- PROHIBIDO USAR EMOJIS O ICONOS en el título o en la descripción. Deben estar completamente limpios de emojis.
 - Mantén la información del producto pero con diferentes palabras
 - Responde en formato JSON PURO (sin markdown, sin backticks), un array de objetos: [{"title":"...","description":"..."},...]`;
 
@@ -621,7 +621,7 @@ Responde SOLO con el JSON array, nada más.`;
     console.error("Error generating AI variants:", error);
     // Fallback integrado en el resultado exitoso para no romper el flujo de publicación
     const fallback = Array.from({ length: botCount }, (_, i) => ({
-      title: `${title} ${["✨", "🔥", "⭐", "💎", "🎯", "💥", "🏆", "🌟", "✅", "🔝"][i % 10]}`,
+      title: `${title} - Opción ${i + 1}`,
       description: description,
     }));
     return { success: true, data: fallback, error: "Usando variantes de seguridad por error técnico" };

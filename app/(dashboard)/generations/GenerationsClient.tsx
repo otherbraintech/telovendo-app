@@ -100,6 +100,11 @@ const statusLabel: Record<string, string> = {
 
 export default function GenerationsClient({ initialGenerations, mode = "overview" }: { initialGenerations: Generation[], mode?: "overview" | "detail" }) {
   const [generations, setGenerations] = useState<Generation[]>(initialGenerations);
+
+  useEffect(() => {
+    setGenerations(initialGenerations);
+  }, [initialGenerations]);
+
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("TODOS");
   const [typeFilter, setTypeFilter] = useState("TODOS");

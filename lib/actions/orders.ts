@@ -475,7 +475,7 @@ export async function retryMissingBots(orderId: string) {
   } catch (err) {
     console.error("Error generating AI variants recursively:", err);
     variants = Array.from({ length: assignCount }, (_, i) => ({
-      title: `${order.listingTitle || order.orderName} ${["🔥", "⭐", "💎", "💯", "🎯"][Math.floor(Math.random() * 5)]}`,
+      title: `${order.listingTitle || order.orderName} - Opción ${i + 1}`,
       description: order.listingDescription || "",
     }));
   }
