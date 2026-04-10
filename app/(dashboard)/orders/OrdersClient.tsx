@@ -68,6 +68,12 @@ const OrderCardImage = ({ url, alt, className }: { url: string, alt: string, cla
 // ─── SEGURIDAD Y VALIDACIONES ────────────────────────────────────
 const FORMAT_CLEAN_REGEX = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}*]/gu;
 
+const PHONE_REGEX = /(?:\+?591)?\s?[67]\d{7}/;
+
+const hasPhoneNumber = (text: string) => {
+  return PHONE_REGEX.test(text);
+};
+
 const validateTextContent = (text: string) => {
   return { valid: true, reason: "" };
 };
@@ -395,15 +401,14 @@ export default function OrdersClient() {
       value = value.replace(FORMAT_CLEAN_REGEX, "");
     }
 
-    // Si es la descripción y hay un sufijo de contacto protegido, garantizar que esté al final
+    // Si es la descripción y no hay ningún teléfono detectado, pero tenemos un contacto de bot,
+    // podemos ser proactivos, pero es mejor dejar que el usuario escriba y validar al final (handleSave).
+    // Sin embargo, mantendremos una versión más inteligente del sufijo automático:
     if (e.target.name === "listingDescription" && CONTACT_SUFFIX) {
-      if (!value.endsWith(CONTACT_SUFFIX)) {
-        // si el usuario lo borró o escribió más, re-adjuntarlo
-        const base = value.endsWith(mainBotPhone)
-          ? value  // permitínle editar el texto Y el número no se toca
-          : value.replace(new RegExp(CONTACT_SUFFIX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "$"), "").trimEnd();
-        setEditForm({ ...editForm, listingDescription: base + CONTACT_SUFFIX });
-        return;
+      const hasPhone = hasPhoneNumber(value);
+      if (!hasPhone && value.length > 10 && !value.includes("WhatsApp")) {
+        // Solo sugerimos añadirlo si el texto es largo y no hay rastros de contacto
+        // Pero para no molestar al usuario mientras escribe, lo haremos solo en handleSave/handleCreate.
       }
     }
     
@@ -464,6 +469,11 @@ export default function OrdersClient() {
       if (!val.valid) {
         toast.error("IA generó contenido prohibido", { description: val.reason });
         return;
+      }
+
+      // Asegurar que el contacto esté presente si la IA lo omitió o no detectó el número
+      if (botPhoneToPass && !hasPhoneNumber(improved)) {
+        improved = improved.trimEnd() + `\n\n📲 WhatsApp: ${botPhoneToPass}`;
       }
       
       setEditForm((prev: { [key: string]: any }) => ({ ...prev, listingDescription: improved }))
@@ -582,6 +592,12 @@ export default function OrdersClient() {
     if (!titleVal.valid) return toast.error(titleVal.reason);
     if (descVal.valid === false) return toast.error(descVal.reason);
 
+    // Inyección automática de contacto si no hay teléfono
+    let finalDescription = editForm.listingDescription || "";
+    if (!hasPhoneNumber(finalDescription) && CONTACT_SUFFIX) {
+      finalDescription = finalDescription.trimEnd() + CONTACT_SUFFIX;
+    }
+
     try {
       setSaving(true)
       let newImageUrls: string[] | undefined = undefined;
@@ -621,7 +637,7 @@ export default function OrdersClient() {
         listingPrice: Number(editForm.listingPrice),
         listingCondition: editForm.listingCondition,
         listingCategory: editForm.listingCategory,
-        listingDescription: editForm.listingDescription,
+        listingDescription: finalDescription,
         listingType: editForm.listingType,
         vehicleYear: Number(editForm.vehicleYear) || undefined,
         vehicleMake: editForm.vehicleMake,
@@ -659,6 +675,12 @@ export default function OrdersClient() {
     const descVal = validateTextContent(editForm.listingDescription || "");
     if (!titleVal.valid) return toast.error(titleVal.reason);
     if (descVal.valid === false) return toast.error(descVal.reason);
+
+    // Inyección automática de contacto si no hay teléfono
+    let finalDescription = editForm.listingDescription || "";
+    if (!hasPhoneNumber(finalDescription) && CONTACT_SUFFIX) {
+      finalDescription = finalDescription.trimEnd() + CONTACT_SUFFIX;
+    }
 
     try {
       setSaving(true)
@@ -699,7 +721,7 @@ export default function OrdersClient() {
         listingPrice: Number(editForm.listingPrice) || 0,
         listingCondition: editForm.listingCondition || "NUEVO",
         listingCategory: editForm.listingCategory || "VARIOS",
-        listingDescription: editForm.listingDescription || "",
+        listingDescription: finalDescription,
         listingAvailability: "DISPONIBLE",
         listingType: editForm.listingType || "ARTICULO",
         listingCurrency: editForm.listingCurrency || "BOLIVIANO",
