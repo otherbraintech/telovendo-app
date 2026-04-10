@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function ReleasesPage() {
   return (
-    <div className="flex-1 overflow-y-auto w-full max-w-4xl mx-auto py-8 px-6 space-y-12">
+    <div className="flex-1 w-full max-w-4xl mx-auto py-8 px-6 space-y-12 mb-8">
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <Rocket className="size-8 text-blue-500" />

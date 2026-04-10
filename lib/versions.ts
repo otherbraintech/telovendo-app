@@ -13,41 +13,42 @@ export const RELEASES: ReleaseVersion[] = [
   {
     version: "1.2.0",
     date: "2026-04-10",
-    title: "AI Optimization & Bot Automation",
-    description: "Major update focusing on stability and contact automation for Facebook Marketplace.",
+    title: "Optimización de IA & Asignación Segura",
+    description: "Actualización principal centrada en la estabilidad de la IA, asignación evitando bots repetidos y contacto automatizado.",
     type: "minor",
     features: [
-      "Automated WhatsApp contact injection in listing descriptions.",
-      "Robust AI error handling to prevent production crashes (500 errors).",
-      "Increased server timeouts (60s) for image generation in Vercel.",
-      "Structured AI response pattern (AIActionResult) for better feedback.",
-      "Bot assignment priority logic for WhatsApp-capable devices."
+      "Inyección automatizada de número de WhatsApp en las descripciones.",
+      "Manejo robusto de errores de IA para evitar cierres o pantallas de caída en producción.",
+      "Tiempos de espera extendidos y estables para la generación de diseño e imágenes en Vercel.",
+      "Patrón de respuesta estructurada para dar mejor feedback ante la moderación de la IA.",
+      "Lógica estricta de asignación de bots: bloquea idénticos WhatsApp/Facebook en la misma publicación.",
+      "Mantenimiento visual: la imagen original de la IA ya no se sobreescribe y se añade a la cola."
     ]
   },
   {
     version: "1.1.0",
     date: "2026-04-05",
-    title: "Dashboard Enhancements",
-    description: "UI improvements and bug fixes for the order management system.",
+    title: "Mejoras de Funcionalidad UI",
+    description: "Optimizaciones de la interfaz y soluciones a la gestión de bots y panel.",
     type: "minor",
     features: [
-      "Improved drag-and-drop image ordering.",
-      "Enhanced order filtering by project.",
-      "Real-time bot status monitoring (initial version).",
-      "Fixed UI glitches in dark mode."
+      "Mejora en la ordenación de imágenes mediante Drag-and-Drop.",
+      "Filtros de pedidos y publicaciones optimizados por proyecto.",
+      "Monitorización del estado de bot en tiempo real (Versión inicial).",
+      "Solventados problemas visuales detectados en el modo oscuro."
     ]
   },
   {
     version: "1.0.0",
     date: "2026-03-20",
-    title: "Initial Launch",
-    description: "The core platform for automated marketplace management.",
+    title: "Lanzamiento Inicial TeloVendo",
+    description: "La plataforma base para la gestión de bot orchestrator en redes sociales.",
     type: "major",
     features: [
-      "Multi-bot management system.",
-      "Order creation and dispatch to Facebook Marketplace.",
-      "AI-driven title and description generation.",
-      "Product image generation using Gemini 1.5 Flash."
+      "Sistema de conexión multicliente y gestión base de la granja de bots.",
+      "Generación de publicaciones y envíos al feed de Marketplace.",
+      "Caja de herramientas IA para mejorar descripciones y títulos de listados.",
+      "Integración genérica de generación de fotos adaptadas usando Gemini 1.5 Flash."
     ]
   }
 ];
