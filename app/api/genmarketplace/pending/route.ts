@@ -17,12 +17,23 @@ import prisma from "@/lib/prisma";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const deviceId = searchParams.get("deviceId") ?? undefined;
+  const id = searchParams.get("id") ?? undefined;
+  const orderId = searchParams.get("orderId") ?? undefined;
+  const search = searchParams.get("search") ?? undefined;
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "100"), 500);
 
   const pending = await prisma.genMarketplace.findMany({
     where: {
       status: "PENDIENTE",
       ...(deviceId ? { deviceId } : {}),
+      ...(id ? { id: Number(id) } : {}),
+      ...(orderId ? { orderId } : {}),
+      ...(search ? {
+        OR: [
+          { genTitle: { contains: search, mode: 'insensitive' as const } },
+          { genDescription: { contains: search, mode: 'insensitive' as const } },
+        ]
+      } : {}),
     },
     take: limit,
     orderBy: { createdAt: "asc" },
