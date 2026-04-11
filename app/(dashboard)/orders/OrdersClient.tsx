@@ -602,6 +602,16 @@ export default function OrdersClient() {
     setDraggedImageIndex(null);
   };
 
+  const handleCancelEditDialog = (closeFully: boolean = true) => {
+    if (isEditing) {
+      if (!window.confirm("Tienes el editor abierto. ¿Cerrar y perder los cambios no guardados?")) {
+        return;
+      }
+    }
+    setIsEditing(false);
+    if (closeFully) setSelectedOrder(null);
+  };
+
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = Math.max(1, parseInt(e.target.value) || 1);
     setEditForm({ ...editForm, quantity: val });
@@ -1969,7 +1979,7 @@ export default function OrdersClient() {
                               <Textarea className="min-h-[140px] bg-muted/20 border-border text-xs leading-relaxed resize-none p-4 focus:ring-2 focus:ring-blue-500" name="listingDescription" value={editForm.listingDescription || ""} onChange={handleEditChange} placeholder="Descripción detallada..." />
                            </div>
                           <div className="mt-auto pt-6 flex gap-3 border-t border-border bg-card">
-                            <button onClick={() => setIsEditing(false)} className="flex-1 h-12 text-[10px] font-black uppercase tracking-[0.2em] border border-border hover:bg-muted transition-all cursor-pointer">Cancelar</button>
+                            <button onClick={() => handleCancelEditDialog(false)} className="flex-1 h-12 text-[10px] font-black uppercase tracking-[0.2em] border border-border hover:bg-muted transition-all cursor-pointer">Cancelar</button>
                             <button disabled={saving} onClick={handleSave} className="flex-[2] h-12 bg-green-600 hover:bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all shadow-xl shadow-green-600/20 active:scale-95">{saving ? <Loader2 className="size-4 animate-spin"/> : "GUARDAR CAMBIOS"}</button>
                           </div>
                         </div>
