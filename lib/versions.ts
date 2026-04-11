@@ -51,10 +51,10 @@ export const RELEASES: ReleaseVersion[] = [
     description: "Optimizaciones de la interfaz y soluciones a la gestión de bots y panel.",
     type: "minor",
     features: [
-      "Mejora en la ordenación de imágenes mediante Drag-and-Drop.",
-      "Filtros de pedidos y publicaciones optimizados por proyecto.",
-      "Monitorización del estado de bot en tiempo real (Versión inicial).",
-      "Solventados problemas visuales detectados en el modo oscuro."
+      { text: "Mejora en la ordenación de imágenes mediante Drag-and-Drop.", audience: "user" },
+      { text: "Filtros de pedidos y publicaciones optimizados por proyecto.", audience: "user" },
+      { text: "Monitorización del estado de bot en tiempo real (Versión inicial).", audience: "user" },
+      { text: "Solventados problemas visuales detectados en el modo oscuro.", audience: "all" }
     ]
   },
   {
@@ -64,10 +64,10 @@ export const RELEASES: ReleaseVersion[] = [
     description: "La plataforma base para la gestión de bot orchestrator en redes sociales.",
     type: "major",
     features: [
-      "Sistema de conexión multicliente y gestión base de la granja de bots.",
-      "Generación de publicaciones y envíos al feed de Marketplace.",
-      "Caja de herramientas IA para mejorar descripciones y títulos de listados.",
-      "Integración genérica de generación de fotos adaptadas usando Gemini 1.5 Flash."
+      { text: "Sistema de conexión multicliente y gestión base de la granja de bots.", audience: "admin" },
+      { text: "Generación de publicaciones y envíos al feed de Marketplace.", audience: "user" },
+      { text: "Caja de herramientas IA para mejorar descripciones y títulos de listados.", audience: "user" },
+      { text: "Integración genérica de generación de fotos adaptadas usando Gemini 1.5 Flash.", audience: "all" }
     ]
   }
 ];
