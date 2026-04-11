@@ -11,7 +11,7 @@ import prisma from "@/lib/prisma";
  */
 export async function POST(request: Request) {
   try {
-    const { id, status } = await request.json();
+    const { id, status, postUrl } = await request.json();
 
     if (!id || !status) {
       return NextResponse.json(
@@ -46,6 +46,7 @@ export async function POST(request: Request) {
         where: { id: Number(id) },
         data: { 
           status,
+          postUrl: postUrl || undefined,
           updatedAt: new Date()
         }
       });

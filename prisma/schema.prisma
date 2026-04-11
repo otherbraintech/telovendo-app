@@ -84,6 +84,7 @@ model GenMarketplace {
   genTitle       String?
   genDescription String?
   imageUrls      String[]      @default([])
+  postUrl        String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @default(now())
 
