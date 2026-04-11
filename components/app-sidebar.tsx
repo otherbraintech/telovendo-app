@@ -79,6 +79,11 @@ export function AppSidebar({
 
   if (user.role === "ADMIN") {
     navMain.push({
+      title: "Gestión Global",
+      url: "/admin/publications",
+      icon: <Globe className="size-4 text-blue-500" />,
+    });
+    navMain.push({
       title: "Dispositivos",
       url: "/devices",
       icon: <Bot className="size-4 text-emerald-500" />,

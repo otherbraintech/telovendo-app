@@ -27,10 +27,26 @@ export default async function ReleasesPage() {
         {RELEASES.map((release, index) => {
           const isLatest = index === 0;
           
-          // Filtrar features según el rol
+          // Filtrar features según el rol y relevancia para el usuario final
           const filteredFeatures = release.features.filter(feat => {
             if (isAdmin) return true; // El admin ve todo
-            return feat.audience === "user" || feat.audience === "all";
+
+            // Si el usuario no es admin, ocultar lo que tenga tag admin explícito
+            if (feat.audience === "admin") return false;
+
+            // Filtro estricto de contenido: solo dejar lo que impacta al usuario final
+            // Ocultar terminología técnica, de backend, seguridad o administración
+            const excludedKeywords = [
+              "api", "bridge", "n8n", "recursos", "endpoint", "admin",
+              "seguridad", "moderación", "moderacion", "backend", "db",
+              "sincronización", "sincronizacion", "servidor", "prioridad",
+              "infraestructura", "optimizacion de dispositivos"
+            ];
+
+            const isExcluded = excludedKeywords.some(kw => feat.text.toLowerCase().includes(kw));
+
+            // Solo mostrar si es para 'user' o 'all' y NO contiene palabras excluidas
+            return (feat.audience === "user" || feat.audience === "all") && !isExcluded;
           });
 
           if (filteredFeatures.length === 0) return null;
