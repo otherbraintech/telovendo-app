@@ -228,3 +228,35 @@ enum Currency {
   BOLIVIANO
   DOLAR
 }
+
+model ChatSession {
+  id             Int           @id @default(autoincrement())
+  phone          String        @db.VarChar(20)
+  customerName   String?       @db.VarChar(200)
+  state          String?       @db.VarChar(40)
+  patientId      Int?
+  patientData    Json?
+  ciAttempts     Int           @default(0)
+  regAttempts    Int           @default(0)
+  suspendedUntil DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  messages       ChatMessage[]
+
+  @@index([phone])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id          Int         @id @default(autoincrement())
+  sessionId   Int
+  role        String      @db.VarChar(10)
+  content     String      @db.Text
+  messageType String?     @db.VarChar(20)
+  createdAt   DateTime    @default(now())
+  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
