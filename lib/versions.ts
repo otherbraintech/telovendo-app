@@ -1,9 +1,14 @@
+export interface Feature {
+  text: string;
+  audience: "user" | "admin" | "all";
+}
+
 export interface ReleaseVersion {
   version: string;
   date: string;
   title: string;
   description: string;
-  features: string[];
+  features: Feature[];
   type: "major" | "minor" | "patch";
 }
 
@@ -17,12 +22,12 @@ export const RELEASES: ReleaseVersion[] = [
     description: "Integración bidireccional con n8n para sincronización de estados y optimización del flujo de ventas público.",
     type: "minor",
     features: [
-      "API Bridge para n8n: Actualización de estados automática mediante webhooks.",
-      "Trazabilidad de Publicaciones: Almacenamiento de URLs reales de Facebook Marketplace enviadas por n8n.",
-      "WhatsApp Direct: Refactorización total del marketplace público para contacto directo via WhatsApp.",
-      "Mensajería Contextual: Inyección automática de ID de producto y referencia en chats de WhatsApp.",
-      "Búsqueda Inteligente: Endpoint de API mejorado con filtros avanzados (Título + Descripción).",
-      "Liberación Autómata de Recursos: Los dispositivos se liberan instantáneamente al completarse la publicación en n8n."
+      { text: "WhatsApp Direct: Nuevo botón de contacto rápido en la página pública del Marketplace.", audience: "user" },
+      { text: "Mensajería Contextual: Tus links de WhatsApp ahora incluyen el ID del producto automáticamente.", audience: "user" },
+      { text: "Trazabilidad Marketplace: Almacenamiento y visualización de URLs reales de tus anuncios en Facebook.", audience: "user" },
+      { text: "API Bridge para n8n: Sincronización automática de estados de publicación.", audience: "admin" },
+      { text: "Búsqueda Inteligente: Endpoint de API mejorado con filtros avanzados.", audience: "admin" },
+      { text: "Liberación de Recursos: Optimización inmediata de dispositivos tras completar tareas.", audience: "admin" }
     ]
   },
   {
@@ -32,12 +37,11 @@ export const RELEASES: ReleaseVersion[] = [
     description: "Actualización principal centrada en la estabilidad de la IA, asignación evitando bots repetidos y contacto automatizado.",
     type: "minor",
     features: [
-      "Inyección automatizada de número de WhatsApp en las descripciones.",
-      "Manejo robusto de errores de IA para evitar cierres o pantallas de caída en producción.",
-      "Tiempos de espera extendidos y estables para la generación de diseño e imágenes en Vercel.",
-      "Patrón de respuesta estructurada para dar mejor feedback ante la moderación de la IA.",
-      "Lógica estricta de asignación de bots: bloquea idénticos WhatsApp/Facebook en la misma publicación.",
-      "Mantenimiento visual: la imagen original de la IA ya no se sobreescribe y se añade a la cola."
+      { text: "Inyección automatizada de tu número de WhatsApp en las descripciones generadas.", audience: "user" },
+      { text: "Lógica estricta de asignación: Evita que se repita el mismo WhatsApp en una publicación.", audience: "user" },
+      { text: "Manejo robusto de errores de IA para una navegación más fluida.", audience: "all" },
+      { text: "Patrón de respuesta estructurada para dar mejor feedback ante la moderación.", audience: "admin" },
+      { text: "Tiempos de espera extendidos para generación de imágenes pesadas.", audience: "admin" }
     ]
   },
   {

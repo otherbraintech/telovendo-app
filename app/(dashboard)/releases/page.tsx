@@ -3,12 +3,16 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Sparkles, Wrench, Bug, Rocket } from "lucide-react";
 import { Metadata } from 'next';
+import { getSession } from "@/lib/auth-utils";
 
 export const metadata: Metadata = {
   title: 'Releases & Novedades - TeloVendo',
 };
 
-export default function ReleasesPage() {
+export default async function ReleasesPage() {
+  const session = await getSession();
+  const isAdmin = session?.user?.role === "ADMIN";
+
   return (
     <div className="flex-1 w-full max-w-4xl mx-auto py-8 px-6 space-y-12 mb-8">
       <div className="space-y-4">
@@ -16,12 +20,21 @@ export default function ReleasesPage() {
           <Rocket className="size-8 text-blue-500" />
           <h1 className="text-3xl font-black tracking-tighter uppercase text-foreground">Releases & Novedades</h1>
         </div>
-        <p className="text-muted-foreground text-sm font-medium">Mantente al tanto de las últimas actualizaciones, mejoras de inteligencia artificial y nuevas funcionalidades del Core Engine de TeloVendo.</p>
+        <p className="text-muted-foreground text-sm font-medium">Mantente al tanto de las últimas actualizaciones y mejoras de TeloVendo adaptadas a tu perfil.</p>
       </div>
 
       <div className="space-y-12">
         {RELEASES.map((release, index) => {
           const isLatest = index === 0;
+          
+          // Filtrar features según el rol
+          const filteredFeatures = release.features.filter(feat => {
+            if (isAdmin) return true; // El admin ve todo
+            return feat.audience === "user" || feat.audience === "all";
+          });
+
+          if (filteredFeatures.length === 0) return null;
+
           return (
             <div key={release.version} className="relative pl-8 md:pl-0">
               {/* Desktop Timeline */}
@@ -60,10 +73,15 @@ export default function ReleasesPage() {
                   <Separator className={isLatest ? 'bg-blue-500/10' : 'bg-border/50'} />
 
                   <ul className="space-y-3">
-                    {release.features.map((feat, i) => (
+                    {filteredFeatures.map((feat, i) => (
                       <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground group-hover:text-foreground/90 transition-colors">
                         <div className="mt-1.5 size-1.5 rounded-full bg-blue-500/40 shrink-0" />
-                        <span className="leading-snug">{feat}</span>
+                        <span className="leading-snug">
+                          {feat.text}
+                          {isAdmin && feat.audience === "admin" && (
+                            <Badge variant="outline" className="ml-2 text-[8px] border-blue-500/20 text-blue-500 px-1 py-0 h-3">ADMIN</Badge>
+                          )}
+                        </span>
                       </li>
                     ))}
                   </ul>
