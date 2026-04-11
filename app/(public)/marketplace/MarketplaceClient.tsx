@@ -69,17 +69,20 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
 
   const handleContact = (pub: any) => {
     const phoneNumber = getBotPhoneNumber(pub);
-    if (!phoneNumber) return;
+    if (!phoneNumber) {
+      alert("Lo sentimos, este vendedor no tiene WhatsApp configurado aún.");
+      return;
+    }
 
     // Clean phone number (remove +, spaces, etc)
     let cleanPhone = phoneNumber.replace(/\D/g, "");
     
-    // Ensure prefix 591 (Bolivia)
-    if (!cleanPhone.startsWith("591")) {
+    // Ensure prefix 591 (Bolivia) if not present
+    if (cleanPhone.length === 8) {
       cleanPhone = `591${cleanPhone}`;
     }
 
-    const message = encodeURIComponent(`Hola, estoy interesado en tu publicación de TeloVendo: "${pub.listingTitle}"`);
+    const message = encodeURIComponent(`¡Hola! 👋 Estoy interesado en el producto: "${pub.listingTitle}" (Ref: ${pub.id}). ¿Sigue disponible?`);
     
     window.open(`https://wa.me/${cleanPhone}?text=${message}`, "_blank");
   };
@@ -215,11 +218,11 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
 
             <CardFooter className="p-3 md:p-4 pt-0 md:pt-0 flex flex-col gap-3">
                <Button 
-                onClick={(e) => { e.stopPropagation(); }}
-                className="hidden md:flex w-full bg-foreground text-background hover:bg-blue-600 hover:text-white rounded-none h-9 font-black text-[9px] tracking-[0.2em] uppercase transition-all duration-300 group/btn"
+                onClick={(e) => { e.stopPropagation(); handleContact(pub); }}
+                className="hidden md:flex w-full bg-[#25D366] text-white hover:bg-[#128C7E] rounded-none h-9 font-black text-[9px] tracking-[0.2em] uppercase transition-all duration-300 group/btn"
                >
-                  Ver en Marketplace
-                  <ExternalLink className="size-3 ml-2 transition-transform group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1" />
+                  Contactar por WhatsApp
+                  <ShoppingCart className="size-3 ml-2 transition-transform group-hover/btn:translate-x-1" />
                </Button>
             </CardFooter>
           </Card>
@@ -375,19 +378,26 @@ export function MarketplaceClient({ publications }: { publications: any[] }) {
                   </div>
                 </div>
 
-                <div className="pt-8 flex flex-col gap-4">
+                 <div className="pt-8 flex flex-col gap-4">
                   <Button 
                     onClick={() => handleContact(selectedPub)}
                     disabled={!getBotPhoneNumber(selectedPub)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-none h-14 font-black text-xs tracking-[0.3em] uppercase transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-50"
+                    className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white rounded-none h-14 font-black text-xs tracking-[0.3em] uppercase transition-all shadow-xl shadow-emerald-500/20 active:scale-95 disabled:opacity-50"
                   >
-                    Contactar Vendedor
+                    Contactar por WhatsApp
                     <ShoppingCart className="size-4 ml-3" />
                   </Button>
-                  <Button variant="outline" className="w-full border-border rounded-none h-12 font-black text-[10px] tracking-[0.2em] uppercase transition-all hover:bg-muted opacity-60 hover:opacity-100">
-                    Ver en Facebook Marketplace
-                    <ExternalLink className="size-3 ml-3" />
-                  </Button>
+                  
+                  {selectedPub.genMarketplaces?.[0]?.postUrl && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => window.open(selectedPub.genMarketplaces[0].postUrl, "_blank")}
+                      className="w-full border-border rounded-none h-12 font-black text-[10px] tracking-[0.2em] uppercase transition-all hover:bg-muted opacity-60 hover:opacity-100"
+                    >
+                      Ver en Facebook Marketplace
+                      <ExternalLink className="size-3 ml-3" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

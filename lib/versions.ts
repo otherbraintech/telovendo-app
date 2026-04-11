@@ -7,9 +7,24 @@ export interface ReleaseVersion {
   type: "major" | "minor" | "patch";
 }
 
-export const CURRENT_VERSION = "1.2.0";
+export const CURRENT_VERSION = "1.3.0";
 
 export const RELEASES: ReleaseVersion[] = [
+  {
+    version: "1.3.0",
+    date: "2026-04-10",
+    title: "Eco-sistema n8n & Contacto Directo",
+    description: "Integración bidireccional con n8n para sincronización de estados y optimización del flujo de ventas público.",
+    type: "minor",
+    features: [
+      "API Bridge para n8n: Actualización de estados automática mediante webhooks.",
+      "Trazabilidad de Publicaciones: Almacenamiento de URLs reales de Facebook Marketplace enviadas por n8n.",
+      "WhatsApp Direct: Refactorización total del marketplace público para contacto directo via WhatsApp.",
+      "Mensajería Contextual: Inyección automática de ID de producto y referencia en chats de WhatsApp.",
+      "Búsqueda Inteligente: Endpoint de API mejorado con filtros avanzados (Título + Descripción).",
+      "Liberación Autómata de Recursos: Los dispositivos se liberan instantáneamente al completarse la publicación en n8n."
+    ]
+  },
   {
     version: "1.2.0",
     date: "2026-04-10",
