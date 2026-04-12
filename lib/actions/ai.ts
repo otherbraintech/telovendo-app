@@ -140,16 +140,24 @@ Descripción actual: "${currentDescription}"${category ? `\nCategoría: ${catego
 export async function analyzeImageSecurity(imageSource: string): Promise<{ safe: boolean; reason?: string }> {
   const apiKey = getApiKey();
 
-  const prompt = `Analiza esta imagen para una publicación de Marketplace. 
-  Debes detectar si contiene:
-  1. Números de teléfono o números de WhatsApp (escritos en texto sobre la imagen).
-  2. Códigos QR.
-  3. Enlaces web o redes sociales.
+  const prompt = `Analiza esta imagen para una publicación de Marketplace en BOLIVIA de forma PERMISIVA.
+  Tu ÚNICA misión es bloquear publicidad no deseada o métodos de pago directo.
+
+  Marca como NO SEGURA (safe: false) ÚNICAMENTE si detectas:
+  1. Números de teléfono de BOLIVIA (que empiecen con 6 o 7 y tengan 8 dígitos) añadidos digitalmente o escritos en carteles grandes para evadir el sistema.
+  2. Códigos QR DE BANCOS o PAGOS (ej: QR de Banco Unión, BNB, Mercantil, BCP o Simple) destinados a transacciones.
+  3. Enlaces web (.com, .bo) añadidos sobre la foto.
+
+  IGNORA TOTALMENTE (safe: true):
+  - Logos de marcas (ThinkPad, HP, etc) y texto en teclados.
+  - Etiquetas de fábrica, números de serie (S/N), códigos de barras técnicos o licencias de Windows.
+  - El fondo de la imagen o texto pequeño que sea parte del entorno.
+  - Capturas de pantalla de WhatsApp o fotos con baja calidad.
 
   Responde EXCLUSIVAMENTE con un objeto JSON:
   {
     "safe": true | false,
-    "reason": "Breve explicación en español si no es segura"
+    "reason": "Solo explica si detectaste un teléfono de Bolivia o un QR de banco"
   }`;
 
   let imageContent: Record<string, unknown>;
