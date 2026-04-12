@@ -27,25 +27,20 @@ export default async function ReleasesPage() {
         {RELEASES.map((release, index) => {
           const isLatest = index === 0;
           
-          // Filtrar features según el rol y relevancia para el usuario final
+          // Filtrar features solo para el usuario final (Nada de Admin)
           const filteredFeatures = release.features.filter(feat => {
-            if (isAdmin) return true; // El admin ve todo
-
-            // Si el usuario no es admin, ocultar lo que tenga tag admin explícito
+            // Ocultar TODO lo que tenga tag admin o que mencione administración/admin
             if (feat.audience === "admin") return false;
 
-            // Filtro estricto de contenido: solo dejar lo que impacta al usuario final
-            // Ocultar terminología técnica, de backend, seguridad o administración
             const excludedKeywords = [
               "api", "bridge", "n8n", "recursos", "endpoint", "admin",
-              "seguridad", "moderación", "moderacion", "backend", "db",
-              "sincronización", "sincronizacion", "servidor", "prioridad",
-              "infraestructura", "optimizacion de dispositivos"
+              "administración", "administracion", "seguridad", "moderación",
+              "moderacion", "backend", "db", "infraestructura", "servidor"
             ];
 
             const isExcluded = excludedKeywords.some(kw => feat.text.toLowerCase().includes(kw));
 
-            // Solo mostrar si es para 'user' o 'all' y NO contiene palabras excluidas
+            // Solo mostrar si es para usuario y NO es algo técnico/administrativo
             return (feat.audience === "user" || feat.audience === "all") && !isExcluded;
           });
 
@@ -94,9 +89,6 @@ export default async function ReleasesPage() {
                         <div className="mt-1.5 size-1.5 rounded-full bg-blue-500/40 shrink-0" />
                         <span className="leading-snug">
                           {feat.text}
-                          {isAdmin && feat.audience === "admin" && (
-                            <Badge variant="outline" className="ml-2 text-[8px] border-blue-500/20 text-blue-500 px-1 py-0 h-3">ADMIN</Badge>
-                          )}
                         </span>
                       </li>
                     ))}
