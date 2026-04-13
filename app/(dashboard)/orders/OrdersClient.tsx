@@ -2,7 +2,7 @@
 
 import { useProjectStore } from "@/hooks/use-project-store"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Search, Filter, ShoppingBag, Loader2, ImagePlus, X, MoreVertical, Copy, Trash2, Edit, ChevronLeft, ChevronRight, Wand2, Sparkles, Bot, ExternalLink, Box, Car, Home, PenLine, Package, CheckCircle2, Clock, AlertCircle, ArrowRight, GripVertical, Plus, ChevronDown, Activity, Zap, LayoutDashboard } from "lucide-react"
+import { Search, Filter, ShoppingBag, Loader2, ImagePlus, X, MoreVertical, Copy, Trash2, Edit, ChevronLeft, ChevronRight, Wand2, Sparkles, Bot, ExternalLink, Box, Car, Home, PenLine, Package, CheckCircle2, Clock, AlertCircle, ArrowRight, GripVertical, Plus, ChevronDown, Activity, Zap, LayoutDashboard, MessageCircle } from "lucide-react"
 import { useEffect, useState, useMemo, memo } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
@@ -1139,11 +1139,11 @@ export default function OrdersClient() {
                 </div>
                 <h3 className="text-[10px] md:text-sm font-bold text-foreground line-clamp-1 leading-none uppercase tracking-tight">{order.listingTitle || order.orderName}</h3>
                 <p className="hidden md:block text-[10px] text-muted-foreground line-clamp-2 leading-relaxed opacity-70">{order.listingDescription || "Publicación sin descripción detallada."}</p>
-                <div className="mt-auto pt-3 md:pt-4 flex items-center justify-between border-t border-border/50 gap-3">
-                   <div className="flex flex-col gap-0.5 min-w-0">
-                     <div className="flex items-center gap-1.5 min-w-0">
-                       <Bot className="size-3 text-blue-500 shrink-0" />
-                       <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest truncate">{order.quantity || 1} Bots</span>
+                <div className="mt-auto pt-3 md:pt-4 flex flex-col sm:flex-row sm:items-center justify-between border-t border-border/50 gap-2 md:gap-3">
+                   <div className="flex flex-col gap-1 min-w-0">
+                     <div className="flex items-center gap-2 min-w-0">
+                       <Bot className="size-3.5 text-blue-500 shrink-0" />
+                       <span className="text-[10px] font-black uppercase text-foreground tracking-widest truncate">{order.quantity || 1} Bots Asignados</span>
                      </div>
                      {(() => {
                        const mainGen = order.genMarketplaces?.find((g: any) => g.device?.redesSociales);
@@ -1152,8 +1152,8 @@ export default function OrdersClient() {
                        const phone = wa?.telefono_asociado || wa?.user;
                        if (!phone) return null;
                        return (
-                         <div className="flex items-center gap-1.5">
-                           <div className="size-1 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                         <div className="flex items-center gap-2 min-w-0">
+                           <MessageCircle className="size-3 text-emerald-500 fill-emerald-500/20 shrink-0" />
                            <span className="text-[10px] font-bold text-emerald-500 tabular-nums truncate">{phone}</span>
                          </div>
                        );
@@ -1163,7 +1163,7 @@ export default function OrdersClient() {
                     <button 
                       onClick={(e) => inlineSendToBots(e, order.id)} 
                       disabled={saving} 
-                      className="h-12 md:h-9 px-4 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-600/20 active:scale-95 shrink-0"
+                      className="h-11 sm:h-9 w-full sm:w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-600/20 active:scale-95 shrink-0"
                     >
                       {saving ? <Loader2 className="size-3 animate-spin"/> : <><Zap className="size-3 fill-current" /> Enviar</>}
                     </button>
@@ -1171,7 +1171,7 @@ export default function OrdersClient() {
                     <Link 
                       href={`/generations/${order.id}`} 
                       onClick={(e) => e.stopPropagation()} 
-                      className="h-12 md:h-9 px-4 bg-muted hover:bg-muted/80 text-foreground border border-border text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 shrink-0 group/btn"
+                      className="h-11 sm:h-9 w-full sm:w-auto px-4 bg-muted hover:bg-muted/80 text-foreground border border-border text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 shrink-0 group/btn"
                     >
                       <Activity className="size-3 text-blue-500 group-hover/btn:animate-pulse" /> 
                       <span>VER Ejecución</span>
