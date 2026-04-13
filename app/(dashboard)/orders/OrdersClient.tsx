@@ -298,8 +298,8 @@ export default function OrdersClient() {
             analyzedFiles.push(file);
           } else {
             toast.error("⚠️ ADVERTENCIA DE SEGURIDAD", { 
-              description: "No se permiten imágenes que incluyan números de teléfono, WhatsApp o códigos QR. El sistema añadirá automáticamente tu contacto de bot. Por favor, usa una imagen limpia.",
-              duration: 6000,
+              description: result.reason || "No se permiten imágenes que incluyan números de teléfono, WhatsApp o códigos QR. El sistema añadirá automáticamente tu contacto de bot.",
+              duration: 8000,
             });
           }
         }

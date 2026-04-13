@@ -165,8 +165,8 @@ export default function GenerationsClient({ initialGenerations, mode = "overview
         } else {
           toast.error("⚠️ ADVERTENCIA DE SEGURIDAD", { 
             id: toastId,
-            description: "No se permiten imágenes con números de teléfono o códigos QR. Por favor, sube una imagen limpia.",
-            duration: 6000,
+            description: result.reason || "No se permiten imágenes con números de teléfono o códigos QR. Por favor, sube una imagen limpia.",
+            duration: 8000,
           });
         }
       } catch (err) {

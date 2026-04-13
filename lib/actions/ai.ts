@@ -140,24 +140,24 @@ Descripción actual: "${currentDescription}"${category ? `\nCategoría: ${catego
 export async function analyzeImageSecurity(imageSource: string): Promise<{ safe: boolean; reason?: string }> {
   const apiKey = getApiKey();
 
-  const prompt = `Analiza esta imagen para una publicación de Marketplace en BOLIVIA de forma PERMISIVA.
-  Tu ÚNICA misión es bloquear publicidad no deseada o métodos de pago directo.
+  const prompt = `Analiza esta imagen para una publicación de Marketplace en BOLIVIA de forma ULTRA-PERMISIVA y FLEXIBLE.
+  Tu ÚNICA misión es bloquear publicidad DELIBERADA o métodos de pago directo.
 
-  Marca como NO SEGURA (safe: false) ÚNICAMENTE si detectas:
-  1. Números de teléfono de BOLIVIA (que empiecen con 6 o 7 y tengan 8 dígitos) añadidos digitalmente o escritos en carteles grandes para evadir el sistema.
-  2. Códigos QR DE BANCOS o PAGOS (ej: QR de Banco Unión, BNB, Mercantil, BCP o Simple) destinados a transacciones.
-  3. Enlaces web (.com, .bo) añadidos sobre la foto.
+  Marca como NO SEGURA (safe: false) ÚNICAMENTE si detectas con ALTA CERTEZA:
+  1. Números de teléfono de BOLIVIA (8 dígitos que empiecen con 6 o 7) que hayan sido AÑADIDOS DIGITALMENTE sobre la foto o escritos en carteles GRANDES y CLAROS con el fin obvio de evadir el sistema para contacto directo.
+  2. Códigos QR de BANCOS o PAGOS (ej: QR de Banco Unión, BNB, Mercantil, BCP o Simple) destinados claramente a transacciones de cobro.
+  3. Enlaces web (.com, .bo) añadidos artificialmente sobre la foto.
 
-  IGNORA TOTALMENTE (safe: true):
-  - Logos de marcas (ThinkPad, HP, etc) y texto en teclados.
-  - Etiquetas de fábrica, números de serie (S/N), códigos de barras técnicos o licencias de Windows.
-  - El fondo de la imagen o texto pequeño que sea parte del entorno.
-  - Capturas de pantalla de WhatsApp o fotos con baja calidad.
+  IGNORA TOTALMENTE (safe: true) y NO BLOQUEES por:
+  - TEXTO EN PANTALLAS DE FONDO (monitores, TVs, laptops encendidas). Es normal que aparezcan textos o números aleatorios en pantallas de fondo.
+  - CARTELES, AFICHES o DECORACIÓN DE FONDO que no sean el objeto principal.
+  - CUALQUIER texto que sea pequeño, borroso, inclinado o que sea parte natural del entorno (etiquetas, manuales, teclados, s/n).
+  - Si tienes la mínima duda de si un número es un teléfono o simplemente ruido visual del fondo, marca como SEGURO (safe: true).
 
   Responde EXCLUSIVAMENTE con un objeto JSON:
   {
     "safe": true | false,
-    "reason": "Solo explica si detectaste un teléfono de Bolivia o un QR de banco"
+    "reason": "Solo explica brevemente si detectaste con TOTAL CERTEZA un teléfono de contacto o un QR de banco"
   }`;
 
   let imageContent: Record<string, unknown>;
