@@ -40,7 +40,7 @@ export default function HistoryClient({ initialLogs }: HistoryClientProps) {
         <div className="flex flex-col gap-2">
           <h1 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter text-foreground flex items-center gap-4">
              <Activity className="size-10 text-blue-500 animate-pulse" />
-             Historial <span className="text-blue-500 drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]">Real</span>
+             Registro de <span className="text-blue-500 drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]">Actividad</span>
           </h1>
           <p className="text-[10px] text-muted-foreground uppercase tracking-[0.4em] font-bold border-l-2 border-blue-500/30 pl-4">
             Actividad registrada en tu cuenta del sistema ({filteredLogs.length} eventos)
@@ -56,70 +56,19 @@ export default function HistoryClient({ initialLogs }: HistoryClientProps) {
               </SelectTrigger>
               <SelectContent position="popper" className="z-50 bg-card border-border rounded-none shadow-2xl">
                 <SelectItem value="TODOS" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">TODOS LOS EVENTOS</SelectItem>
-                <SelectItem value="BOT" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">CENTRAL DE BOTS</SelectItem>
-                <SelectItem value="SISTEMA" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">NÚCLEO KERNEL</SelectItem>
-                <SelectItem value="PROYECTO" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">INFRAESTRUCTURA</SelectItem>
-                <SelectItem value="PUBLICACIÓN" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">ÓRDENES ACTIVAS</SelectItem>
+                <SelectItem value="BOT" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">BOTS</SelectItem>
+                <SelectItem value="SISTEMA" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">SISTEMA</SelectItem>
+                <SelectItem value="PROYECTO" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">PROYECTOS</SelectItem>
+                <SelectItem value="PUBLICACIÓN" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">PUBLICACIONES</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        
-        {/* STATS SMALL PANEL */}
-        <div className="lg:col-span-1 space-y-6">
-           <div className="bg-blue-600 p-8 space-y-5 shadow-2xl shadow-blue-600/20 relative overflow-hidden group rounded-sm">
-              <Shield className="absolute -top-10 -right-10 size-48 text-white/5 rotate-12 group-hover:rotate-45 transition-transform duration-1000" />
-              <div className="relative z-10">
-                <p className="text-[9px] uppercase font-black tracking-[0.3em] text-white/60">Sistema Operativo</p>
-                <div className="text-4xl font-black text-white italic tracking-tighter uppercase drop-shadow-sm">ESTABLE</div>
-              </div>
-              <div className="pt-5 border-t border-white/10 flex items-center justify-between relative z-10">
-                <span className="text-[9px] font-black uppercase text-white/40 tracking-widest">Sincronización</span>
-                <span className="text-[10px] font-mono font-bold text-white tracking-widest uppercase flex items-center gap-2">
-                  <RefreshCw className="size-3 animate-spin duration-[3000ms]" />
-                  LIVE
-                </span>
-              </div>
-           </div>
-
-           <div className="bg-card/50 border border-border/60 p-7 space-y-7 rounded-sm backdrop-blur-sm">
-              <div className="flex items-center gap-3 text-blue-500">
-                <Server className="size-4" />
-                <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Nodos Conectados</h4>
-              </div>
-              <div className="space-y-5">
-                 {[
-                   { name: "Node Engine", status: "OK", color: "bg-green-500" },
-                   { name: "Bot Cluster", status: "SYNC", color: "bg-blue-500" },
-                   { name: "DB Vector", status: "READY", color: "bg-green-500" },
-                 ].map((s, i) => (
-                   <div key={i} className="flex items-center justify-between group/node">
-                     <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest group-hover/node:text-foreground transition-colors">{s.name}</span>
-                     <div className="flex items-center gap-3">
-                       <span className="text-[8px] font-black uppercase tracking-tighter opacity-40">{s.status}</span>
-                       <div className={`size-1.5 rounded-full ${s.color} shadow-[0_0_8px] shadow-${s.color.split('-')[1]}-500/50 animate-pulse`} />
-                     </div>
-                   </div>
-                 ))}
-              </div>
-           </div>
-
-           <div className="bg-card border border-border/40 p-7 space-y-4 hidden lg:block rounded-sm opacity-60 hover:opacity-100 transition-opacity">
-              <div className="flex items-center gap-2 text-neutral-400">
-                <Terminal className="size-4" />
-                <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Fuente de Datos</h4>
-              </div>
-              <p className="text-[9px] leading-relaxed text-muted-foreground font-black uppercase tracking-widest">
-                El historial registra solo acciones autenticadas por el usuario maestro para garantizar la trazabilidad del sistema.
-              </p>
-           </div>
-        </div>
-
+      <div className="grid grid-cols-1 gap-8">
         {/* LOGS LIST */}
-        <div className="lg:col-span-3 space-y-5">
+        <div className="space-y-5">
           {filteredLogs.map((log: any, i: number) => (
             <div
               key={log.id}

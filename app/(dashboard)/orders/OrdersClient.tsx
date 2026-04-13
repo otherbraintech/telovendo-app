@@ -2,7 +2,7 @@
 
 import { useProjectStore } from "@/hooks/use-project-store"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Search, Filter, ShoppingBag, Loader2, ImagePlus, X, MoreVertical, Copy, Trash2, Edit, ChevronLeft, ChevronRight, Wand2, Sparkles, Bot, ExternalLink, Box, Car, Home, PenLine, Package, CheckCircle2, Clock, AlertCircle, ArrowRight, GripVertical, Plus, ChevronDown, Activity, Zap, LayoutDashboard, MessageCircle } from "lucide-react"
+import { Search, Filter, ShoppingBag, Loader2, ImagePlus, X, MoreVertical, Copy, Trash2, Edit, ChevronLeft, ChevronRight, Wand2, Sparkles, Bot, ExternalLink, Box, Car, Home, PenLine, Package, CheckCircle2, Clock, AlertCircle, ArrowRight, GripVertical, Plus, ChevronDown, Activity, Zap, LayoutDashboard, MessageCircle, Phone } from "lucide-react"
 import { useEffect, useState, useMemo, memo } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
@@ -1153,7 +1153,7 @@ export default function OrdersClient() {
                        if (!phone) return null;
                        return (
                          <div className="flex items-center gap-2 min-w-0">
-                           <MessageCircle className="size-3 text-emerald-500 fill-emerald-500/20 shrink-0" />
+                           <Phone className="size-3 text-emerald-500 fill-emerald-500/20 shrink-0" />
                            <span className="text-[10px] font-bold text-emerald-500 tabular-nums truncate">{phone}</span>
                          </div>
                        );

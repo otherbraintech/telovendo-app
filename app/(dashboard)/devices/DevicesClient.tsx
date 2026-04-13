@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useMemo } from "react";
 import { Plus, Cpu, Trash2, Pencil, CheckCircle2, CircleDashed, AlertCircle, Bot, RefreshCw, Loader2, Smartphone, Eye, ScrollText } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -44,6 +44,28 @@ export default function DevicesClient({ initialDevices }: { initialDevices: Devi
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [deviceDetails, setDeviceDetails] = useState<Device | null>(null);
   const [lastSync, setLastSync] = useState<Date>(new Date());
+  const [statusFilter, setStatusFilter] = useState("TODOS");
+
+  const statusPriority: Record<string, number> = {
+    "LIBRE": 1,
+    "OCUPADO": 2,
+    "BLOQUEADO": 3,
+    "SIN_CUENTAS": 4
+  };
+
+  const sortedAndFilteredDevices = useMemo(() => {
+    let list = [...devices];
+    
+    if (statusFilter !== "TODOS") {
+      list = list.filter(d => d.status === statusFilter);
+    }
+
+    return list.sort((a, b) => {
+      const pA = statusPriority[a.status] || 99;
+      const pB = statusPriority[b.status] || 99;
+      return pA - pB;
+    });
+  }, [devices, statusFilter]);
 
   const handleSync = async (silent = false) => {
     if (!silent) setIsSyncing(true);
@@ -176,6 +198,19 @@ export default function DevicesClient({ initialDevices }: { initialDevices: Devi
             Sincronizar
           </Button>
 
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-10 w-40 bg-card border border-border text-[10px] font-black uppercase tracking-widest transition-all rounded-none hover:bg-muted/50">
+              <SelectValue placeholder="ESTADO: TODOS" />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="TODOS" className="text-[10px] font-black uppercase">TODOS LOS ESTADOS</SelectItem>
+              <SelectItem value="LIBRE" className="text-[10px] font-black uppercase text-emerald-500">LIBRE (DISPONIBLES)</SelectItem>
+              <SelectItem value="OCUPADO" className="text-[10px] font-black uppercase text-blue-500">OCUPADOS</SelectItem>
+              <SelectItem value="SIN_CUENTAS" className="text-[10px] font-black uppercase text-orange-500">SIN CUENTAS</SelectItem>
+              <SelectItem value="BLOQUEADO" className="text-[10px] font-black uppercase text-red-500">BLOQUEADOS</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button onClick={handleOpenNew} className="h-10 bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest transition-all rounded-none shadow-lg shadow-blue-500/20">
@@ -232,14 +267,14 @@ export default function DevicesClient({ initialDevices }: { initialDevices: Devi
             </TableRow>
           </TableHeader>
           <TableBody>
-            {devices.length === 0 ? (
+            {sortedAndFilteredDevices.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-40 text-center text-xs uppercase font-bold text-muted-foreground italic tracking-widest opacity-30">
-                   Sin dispositivos detectados en el cluster
+                   Sin dispositivos detectados con estos filtros
                 </TableCell>
               </TableRow>
             ) : (
-              devices.map((device) => (
+              sortedAndFilteredDevices.map((device) => (
                 <TableRow key={device.id} className="border-border/50 hover:bg-muted/20 transition-all group">
                   <TableCell className="px-8 py-6">
                     <div className="flex items-center gap-4">
