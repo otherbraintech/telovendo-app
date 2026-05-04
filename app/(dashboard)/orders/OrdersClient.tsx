@@ -2,7 +2,7 @@
 
 import { useProjectStore } from "@/hooks/use-project-store"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Search, Filter, ShoppingBag, Loader2, ImagePlus, X, MoreVertical, Copy, Trash2, Edit, ChevronLeft, ChevronRight, Wand2, Sparkles, Bot, ExternalLink, Box, Car, Home, PenLine, Package, CheckCircle2, Clock, AlertCircle, ArrowRight, GripVertical, Plus, ChevronDown, Activity, Zap, LayoutDashboard, MessageCircle, Phone } from "lucide-react"
+import { Search, Filter, ShoppingBag, Loader2, ImagePlus, X, MoreVertical, Copy, Trash2, Edit, ChevronLeft, ChevronRight, Wand2, Sparkles, Bot, ExternalLink, Box, Car, Home, PenLine, Package, CheckCircle2, Clock, AlertCircle, AlertTriangle, ArrowRight, GripVertical, Plus, ChevronDown, Activity, Zap, LayoutDashboard, MessageCircle, Phone } from "lucide-react"
 import { useEffect, useState, useMemo, memo } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
@@ -123,6 +123,7 @@ export default function OrdersClient() {
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [processingId, setProcessingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<any>({})
   const [editSelectedFiles, setEditSelectedFiles] = useState<File[]>([])
   const [filter, setFilter] = useState("TODAS")
@@ -260,6 +261,33 @@ export default function OrdersClient() {
     }
   }
 
+  const resizeImage = (file: File, maxWidth = 1024): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleEditFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
@@ -279,6 +307,11 @@ export default function OrdersClient() {
 
       if (validFiles.length === 0) return;
 
+      if (editingMixedImages.length + validFiles.length > 10) {
+        toast.error("Límite excedido", { description: "Solo puedes tener un máximo de 10 imágenes." });
+        return;
+      }
+
       setIsVerifyingImage(true);
       const toastId = toast.loading("Analizando seguridad de imágenes...");
       
@@ -286,27 +319,29 @@ export default function OrdersClient() {
         const analyzedFiles: File[] = [];
         const { analyzeImageSecurity } = await import("@/lib/actions/ai");
 
+        let imagesWithAlert = false;
         for (const file of validFiles) {
-          const base64 = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(file);
-          });
-          
+          const base64 = await resizeImage(file);
           const result = await analyzeImageSecurity(base64);
-          if (result.safe) {
-            analyzedFiles.push(file);
-          } else {
-            toast.error("⚠️ ADVERTENCIA DE SEGURIDAD", { 
-              description: result.reason || "No se permiten imágenes que incluyan números de teléfono, WhatsApp o códigos QR. El sistema añadirá automáticamente tu contacto de bot.",
-              duration: 8000,
+          
+          analyzedFiles.push(file);
+
+          if (!result.safe) {
+            imagesWithAlert = true;
+            toast.warning("Contenido detectado", { 
+              description: `Se detectó posible información de contacto en "${file.name}". La publicación se marcará para revisión.`,
+              duration: 5000,
             });
           }
         }
         
+        if (imagesWithAlert) {
+          setEditForm((prev: any) => ({ ...prev, hasSecurityAlert: true }));
+        }
+        
         if (analyzedFiles.length > 0) {
           const oldImagesLength = editingMixedImages.length;
-          setEditSelectedFiles(prev => [...prev, ...analyzedFiles]);
+          setEditSelectedFiles((prev: File[]) => [...prev, ...analyzedFiles]);
           setActiveImageIndex(oldImagesLength);
           
           // Si es un vehículo y no hay datos, intentar analizar con IA
@@ -675,12 +710,14 @@ export default function OrdersClient() {
         vehicleMake: editForm.vehicleMake,
         vehicleModel: editForm.vehicleModel,
         vehicleMileage: Number(editForm.vehicleMileage) || undefined,
+        propType: editForm.propType,
         propRooms: Number(editForm.propRooms) || undefined,
         propBathrooms: Number(editForm.propBathrooms) || undefined,
         propArea: Number(editForm.propArea) || undefined,
         quantity: Number(editForm.quantity) || 1,
         listingCurrency: editForm.listingCurrency,
-        imageUrls: [...(editForm.imageUrls || []), ...(newImageUrls || [])]
+        imageUrls: [...(editForm.imageUrls || []), ...(newImageUrls || [])],
+        hasSecurityAlert: editForm.hasSecurityAlert
       })
       
       setOrders(orders.map(o => o.id === selectedOrder.id ? updated : o))
@@ -761,11 +798,13 @@ export default function OrdersClient() {
         vehicleMake: editForm.vehicleMake,
         vehicleModel: editForm.vehicleModel,
         vehicleMileage: Number(editForm.vehicleMileage) || undefined,
+        propType: editForm.propType,
         propRooms: Number(editForm.propRooms) || undefined,
         propBathrooms: Number(editForm.propBathrooms) || undefined,
         propArea: Number(editForm.propArea) || undefined,
         quantity: Number(editForm.quantity) || 1,
-        imageUrls: newImageUrls
+        imageUrls: newImageUrls,
+        hasSecurityAlert: editForm.hasSecurityAlert
       })
       
       setOrders([created, ...orders])
@@ -789,7 +828,7 @@ export default function OrdersClient() {
   const executeDispatch = async () => {
     if (!selectedOrder) return;
     try {
-      setSaving(true)
+      setProcessingId(selectedOrder.id)
       const updated = await sendOrderToBots(selectedOrder.id)
       setOrders(orders.map(o => o.id === selectedOrder.id ? updated : o))
       setSelectedOrder(updated)
@@ -808,14 +847,14 @@ export default function OrdersClient() {
         })
       }
     } finally {
-      setSaving(false)
+      setProcessingId(null)
     }
   }
 
   const inlineSendToBots = async (e: React.MouseEvent, orderId: string) => {
     e.stopPropagation()
     try {
-      setSaving(true)
+      setProcessingId(orderId)
       const updated = await sendOrderToBots(orderId)
       setOrders(orders.map(o => o.id === orderId ? updated : o))
       if (selectedOrder?.id === orderId) {
@@ -835,7 +874,7 @@ export default function OrdersClient() {
         })
       }
     } finally {
-      setSaving(false)
+      setProcessingId(null)
     }
   }
 
@@ -859,6 +898,7 @@ export default function OrdersClient() {
         vehicleMake: order.vehicleMake,
         vehicleModel: order.vehicleModel,
         vehicleMileage: order.vehicleMileage,
+        propType: order.propType,
         propRooms: order.propRooms,
         propBathrooms: order.propBathrooms,
         propArea: order.propArea,
@@ -882,14 +922,14 @@ export default function OrdersClient() {
   const handleCancel = async (e: React.MouseEvent, orderId: string) => {
     e.stopPropagation()
     setMenuOpenId(null)
-    setSaving(true)
+    setProcessingId(orderId)
     try {
       const updated = await cancelBotOrder(orderId)
       setOrders(orders.map(o => o.id === orderId ? updated : o))
     } catch (err) {
       console.error(err)
     } finally {
-      setSaving(false)
+      setProcessingId(null)
     }
   }
 
@@ -897,14 +937,14 @@ export default function OrdersClient() {
     e.stopPropagation()
     setMenuOpenId(null)
     if (!confirm("¿Seguro que deseas eliminar esta publicación permanentemente?")) return
-    setSaving(true)
+    setProcessingId(orderId)
     try {
       await deleteBotOrder(orderId)
       setOrders(orders.filter(o => o.id !== orderId))
     } catch (err) {
       console.error(err)
     } finally {
-      setSaving(false)
+      setProcessingId(null)
     }
   }
 
@@ -1132,6 +1172,14 @@ export default function OrdersClient() {
                   <div className="absolute inset-0 flex items-center justify-center"><img src="/iconTeloVendo.svg" alt="Logo" className="size-20 opacity-5 dark:invert" /></div>
                 )}
                 <div className="absolute top-3 left-3 z-10"><span className={`px-2 py-1 text-[8px] font-black uppercase tracking-wider rounded-none shadow-xl backdrop-blur-md border ${order.status === 'CANCELADA' ? 'bg-red-500/80 border-red-500/20 text-white' : order.status === 'LISTA' ? 'bg-amber-500/80 border-amber-500/20 text-white' : order.status === 'GENERANDO' ? 'bg-blue-600 border-blue-500/20 text-white animate-pulse' : 'bg-green-600 border-green-500/20 text-white'}`}>{statusLabel[order.status] ?? order.status}</span></div>
+                {order.hasSecurityAlert && (
+                   <div className="absolute top-3 right-3 z-20">
+                      <div className="bg-red-600 text-white px-2 py-1 flex items-center gap-1.5 shadow-2xl animate-pulse border border-white/20">
+                         <AlertTriangle className="size-3" />
+                         <span className="text-[9px] font-black uppercase tracking-tighter">ALERTA !!!</span>
+                      </div>
+                   </div>
+                )}
               </div>
               <div className="p-2 md:p-4 flex flex-col flex-1 gap-1 md:gap-2 bg-gradient-to-b from-card to-muted/10">
                 <div className="text-sm md:text-xl font-black text-blue-500 tabular-nums tracking-tighter">
@@ -1162,10 +1210,10 @@ export default function OrdersClient() {
                   {order.status === "LISTA" ? (
                     <button 
                       onClick={(e) => inlineSendToBots(e, order.id)} 
-                      disabled={saving} 
+                      disabled={!!processingId} 
                       className="h-11 sm:h-9 w-full sm:w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-600/20 active:scale-95 shrink-0"
                     >
-                      {saving ? <Loader2 className="size-3 animate-spin"/> : <><Zap className="size-3 fill-current" /> Enviar</>}
+                      {processingId === order.id ? <Loader2 className="size-3 animate-spin"/> : <><Zap className="size-3 fill-current" /> Enviar</>}
                     </button>
                   ) : (
                     <Link 
@@ -1302,25 +1350,27 @@ export default function OrdersClient() {
                         ))}
                       </div>
                     )}
-                    <div className="grid grid-cols-2 gap-2 mt-4">
+                    <div className={`grid ${editForm.listingType === "PROPIEDAD" ? "grid-cols-1" : "grid-cols-2"} gap-2 mt-4`}>
                       <label className={`border border-dashed p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${isVerifyingImage ? 'border-blue-600 bg-blue-600/5 cursor-wait' : 'border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10'}`}>
                          <input type="file" multiple accept="image/*" className="hidden" onChange={handleEditFileChange} disabled={isVerifyingImage} />
                          {isVerifyingImage ? <Loader2 className="size-5 text-blue-600 animate-spin" /> : <ImagePlus className="size-5 text-blue-500 group-hover:scale-125 transition-transform duration-500" />}
                          <p className={`text-[8px] font-black uppercase tracking-widest ${isVerifyingImage ? 'text-blue-600 animate-pulse' : 'text-blue-500'}`}>{isVerifyingImage ? 'Analizando' : 'Subir'}</p>
                       </label>
-                      <div className="relative group">
-                        <button onClick={() => setImproveMenuOpen(!improveMenuOpen)} disabled={aiLoading === "image" || !editingMixedImages[activeImageIndex]} className="w-full h-full border border-dashed border-amber-500/30 p-4 flex flex-col items-center justify-center gap-2 cursor-pointer bg-amber-500/5 hover:bg-amber-500/10 transition-all group disabled:opacity-50">
-                           {aiLoading === "image" ? <Loader2 className="size-5 text-amber-500 animate-spin" /> : <Wand2 className="size-5 text-amber-500 group-hover:scale-125 transition-transform duration-500" />}
-                           <p className="text-[8px] font-black uppercase tracking-widest text-amber-500">Mejorar IA</p>
-                        </button>
-                        {improveMenuOpen && (
-                          <div className="absolute bottom-full left-0 w-full mb-2 bg-card border border-border shadow-2xl z-50 animate-in slide-in-from-bottom-2 duration-300">
-                            <button onClick={() => handleImproveSelectedImage("CLEAN")} className="w-full text-left px-4 py-3 text-[9px] font-black uppercase flex items-center gap-2 hover:bg-muted transition-colors border-b border-border cursor-pointer"><Sparkles className="size-3 text-blue-500" /> Fondo Blanco</button>
-                            <button onClick={() => handleImproveSelectedImage("PERSPECTIVE")} className="w-full text-left px-4 py-3 text-[9px] font-black uppercase flex items-center gap-2 hover:bg-muted transition-colors border-b border-border cursor-pointer"><ImagePlus className="size-3 text-amber-500" /> Perspectiva 3D</button>
-                            <button onClick={() => handleImproveSelectedImage("STUDIO")} className="w-full text-left px-4 py-3 text-[9px] font-black uppercase flex items-center gap-2 hover:bg-muted transition-colors cursor-pointer"><Bot className="size-3 text-green-500" /> Foto Profesional</button>
-                          </div>
-                        )}
-                      </div>
+                      {editForm.listingType !== "PROPIEDAD" && (
+                        <div className="relative group">
+                          <button onClick={() => setImproveMenuOpen(!improveMenuOpen)} disabled={aiLoading === "image" || !editingMixedImages[activeImageIndex]} className="w-full h-full border border-dashed border-amber-500/30 p-4 flex flex-col items-center justify-center gap-2 cursor-pointer bg-amber-500/5 hover:bg-amber-500/10 transition-all group disabled:opacity-50">
+                             {aiLoading === "image" ? <Loader2 className="size-5 text-amber-500 animate-spin" /> : <Wand2 className="size-5 text-amber-500 group-hover:scale-125 transition-transform duration-500" />}
+                             <p className="text-[8px] font-black uppercase tracking-widest text-amber-500">Mejorar IA</p>
+                          </button>
+                          {improveMenuOpen && (
+                            <div className="absolute bottom-full left-0 w-full mb-2 bg-card border border-border shadow-2xl z-50 animate-in slide-in-from-bottom-2 duration-300">
+                              <button onClick={() => handleImproveSelectedImage("CLEAN")} className="w-full text-left px-4 py-3 text-[9px] font-black uppercase flex items-center gap-2 hover:bg-muted transition-colors border-b border-border cursor-pointer"><Sparkles className="size-3 text-blue-500" /> Fondo Blanco</button>
+                              <button onClick={() => handleImproveSelectedImage("PERSPECTIVE")} className="w-full text-left px-4 py-3 text-[9px] font-black uppercase flex items-center gap-2 hover:bg-muted transition-colors border-b border-border cursor-pointer"><ImagePlus className="size-3 text-amber-500" /> Perspectiva 3D</button>
+                              <button onClick={() => handleImproveSelectedImage("STUDIO")} className="w-full text-left px-4 py-3 text-[9px] font-black uppercase flex items-center gap-2 hover:bg-muted transition-colors cursor-pointer"><Bot className="size-3 text-green-500" /> Foto Profesional</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {editForm.listingType === "VEHICULO" && editSelectedFiles.length > 0 && (
                       <button 
@@ -1498,21 +1548,15 @@ export default function OrdersClient() {
 
                       {editForm.listingType === "PROPIEDAD" && (
                         <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-500">
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Hab.</Label><Input type="number" className="h-12 bg-muted/20 border-border text-xs font-bold" name="propRooms" value={editForm.propRooms || ""} onChange={handleEditChange} /></div>
-                            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Baños</Label><Input type="number" className="h-12 bg-muted/20 border-border text-xs font-bold" name="propBathrooms" value={editForm.propBathrooms || ""} onChange={handleEditChange} /></div>
-                            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">m²</Label><Input type="number" className="h-12 bg-muted/20 border-border text-xs font-bold" name="propArea" value={editForm.propArea || ""} onChange={handleEditChange} /></div>
-                          </div>
                           <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Tipo de Propiedad</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Categoría</Label>
                             <Select value={editForm.listingCategory} onValueChange={v => setEditForm({...editForm, listingCategory: v})}>
                               <SelectTrigger className="w-full h-12 bg-muted/20 border border-border text-[10px] font-bold uppercase rounded-none focus:ring-2 focus:ring-blue-500 transition-all">
-                                <SelectValue placeholder="Seleccionar tipo..." />
+                                <SelectValue placeholder="Seleccionar..." />
                               </SelectTrigger>
                               <SelectContent className="z-[100]">
-                                {["ALQUILER_PROPIEDADES", "VENTA_PROPIEDADES", "TERRENOS_Y_LOTES", "LOCALES_Y_OFFICINAS"].map(c => (
-                                  <SelectItem key={c} value={c} className="text-[10px] font-bold uppercase">{c.replace(/_/g, ' ')}</SelectItem>
-                                ))}
+                                <SelectItem value="VENTA_PROPIEDADES" className="text-[10px] font-bold uppercase">VIVIENDAS EN VENTA</SelectItem>
+                                <SelectItem value="ALQUILER_PROPIEDADES" className="text-[10px] font-bold uppercase">ALQUILERES</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -1555,7 +1599,7 @@ export default function OrdersClient() {
                          <div className="flex items-center justify-between">
                            <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Descripción Detallada</Label>
                            <button onClick={handleImproveDescription} disabled={aiLoading === "description"} className="flex items-center gap-1.5 text-[9px] font-black uppercase text-blue-500 hover:text-blue-400 transition-colors disabled:opacity-50">
-                             {aiLoading === "description" ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />} Mejorar con IA
+                               {aiLoading === "description" ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />} Mejorar con IA
                            </button>
                          </div>
                          <Textarea className="min-h-[140px] bg-muted/20 border-border text-xs leading-relaxed resize-none p-4 focus:ring-2 focus:ring-blue-500" name="listingDescription" value={editForm.listingDescription || ""} onChange={(e) => {
@@ -1717,6 +1761,15 @@ export default function OrdersClient() {
                       </div>
 
                       <div className="flex-1 md:overflow-y-auto custom-scrollbar pr-2">
+                        {selectedOrder.hasSecurityAlert && (
+                          <div className="mb-6 p-4 bg-red-600/10 border-2 border-red-600 text-red-600 flex items-center gap-4 animate-in slide-in-from-top-4 duration-500">
+                            <AlertTriangle className="size-8 animate-bounce" />
+                            <div className="flex flex-col">
+                               <span className="text-sm font-black uppercase tracking-widest">PUBLICACIÓN EN ALERTA</span>
+                               <span className="text-[10px] font-bold uppercase opacity-80">ESTA PUBLICACIÓN CONTIENE POSIBLES IMÁGENES CON CONTACTOS EXTERNOS O QRS.</span>
+                            </div>
+                          </div>
+                        )}
                         <div className="mb-6">
                           <div className="flex items-center gap-4 mb-2">
                             <span className="text-3xl md:text-4xl font-black tracking-tighter text-blue-500 tabular-nums">
@@ -1794,7 +1847,9 @@ export default function OrdersClient() {
                           <div className="space-y-1.5"><h4 className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-[0.3em]">Descripción</h4><p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap font-medium">{selectedOrder.listingDescription || "Sin descripción."}</p></div>
                           <div className="grid grid-cols-2 gap-6 pt-6 border-t border-border/50">
                              <div className="space-y-1.5"><h4 className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-[0.3em]">Categoría</h4><p className="text-xs font-bold uppercase text-blue-500">{selectedOrder.listingCategory?.replace(/_/g, ' ')}</p></div>
-                             <div className="space-y-1.5"><h4 className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-[0.3em]">Condición</h4><p className="text-xs font-bold uppercase">{selectedOrder.listingCondition?.replace(/_/g, ' ')}</p></div>
+                             {selectedOrder.listingType !== "PROPIEDAD" && (
+                               <div className="space-y-1.5"><h4 className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-[0.3em]">Condición</h4><p className="text-xs font-bold uppercase">{selectedOrder.listingCondition?.replace(/_/g, ' ')}</p></div>
+                             )}
                           </div>
                         </div>
                       </div>

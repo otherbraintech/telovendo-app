@@ -140,24 +140,24 @@ Descripción actual: "${currentDescription}"${category ? `\nCategoría: ${catego
 export async function analyzeImageSecurity(imageSource: string): Promise<{ safe: boolean; reason?: string }> {
   const apiKey = getApiKey();
 
-  const prompt = `Analiza esta imagen para una publicación de Marketplace en BOLIVIA de forma ULTRA-PERMISIVA y FLEXIBLE.
-  Tu ÚNICA misión es bloquear publicidad DELIBERADA o métodos de pago directo.
+  const prompt = `Analiza esta imagen para una publicación de Marketplace de forma TOTALMENTE PERMISIVA.
+  Tu ÚNICA misión es detectar y bloquear publicidad DELIBERADA de contacto externo (Nros de WhatsApp o QRs de pago).
 
-  Marca como NO SEGURA (safe: false) ÚNICAMENTE si detectas con ALTA CERTEZA:
-  1. Números de teléfono de BOLIVIA (8 dígitos que empiecen con 6 o 7) que hayan sido AÑADIDOS DIGITALMENTE sobre la foto o escritos en carteles GRANDES y CLAROS con el fin obvio de evadir el sistema para contacto directo.
-  2. Códigos QR de BANCOS o PAGOS (ej: QR de Banco Unión, BNB, Mercantil, BCP o Simple) destinados claramente a transacciones de cobro.
-  3. Enlaces web (.com, .bo) añadidos artificialmente sobre la foto.
+  REGLAS DE ORO PARA IGNORAR (Marca como safe: true):
+  - TEXTO EN PANTALLAS DE FONDO: Es 100% NORMAL ver texto, marcas, códigos o números en monitores, TVs, laptops o teclados de fondo. NO LO BLOQUEES.
+  - CARTELES O AFICHES DE FONDO: Si ves un cartel en una pared, una etiqueta en una caja de fondo, o letras pequeñas en el entorno, IGNÓRALO.
+  - RUIDO VISUAL: Cualquier texto pequeño, borroso, inclinado o que sea parte natural del producto (logos de marca, manuales).
 
-  IGNORA TOTALMENTE (safe: true) y NO BLOQUEES por:
-  - TEXTO EN PANTALLAS DE FONDO (monitores, TVs, laptops encendidas). Es normal que aparezcan textos o números aleatorios en pantallas de fondo.
-  - CARTELES, AFICHES o DECORACIÓN DE FONDO que no sean el objeto principal.
-  - CUALQUIER texto que sea pequeño, borroso, inclinado o que sea parte natural del entorno (etiquetas, manuales, teclados, s/n).
-  - Si tienes la mínima duda de si un número es un teléfono o simplemente ruido visual del fondo, marca como SEGURO (safe: true).
+  MARCA COMO NO SEGURA (safe: false) SOLO SI:
+  1. Hay un NÚMERO DE TELÉFONO (8 dígitos aprox) escrito de forma CLARA y GRANDE específicamente para que el cliente llame, ya sea en un cartel hecho a mano o sobrepuesto digitalmente.
+  2. Hay un CÓDIGO QR destinado a PAGOS (Bancos, Simple, etc).
 
+  Si tienes dudas, marca como safe: true. Preferimos dejar pasar una imagen que bloquear injustamente una foto real.
+  
   Responde EXCLUSIVAMENTE con un objeto JSON:
   {
     "safe": true | false,
-    "reason": "Solo explica brevemente si detectaste con TOTAL CERTEZA un teléfono de contacto o un QR de banco"
+    "reason": "Solo si es false, explica qué contacto directo detectaste"
   }`;
 
   let imageContent: Record<string, unknown>;

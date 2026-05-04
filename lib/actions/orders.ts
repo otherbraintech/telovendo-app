@@ -24,9 +24,11 @@ export async function createBotOrder(data: {
   vehicleMake?: string;
   vehicleModel?: string;
   vehicleMileage?: number;
+  propType?: string;
   propRooms?: number;
   propBathrooms?: number;
   propArea?: number;
+  hasSecurityAlert?: boolean;
 }) {
   const session = await getSession();
   if (!session) throw new Error("No session");
@@ -55,6 +57,7 @@ export async function createBotOrder(data: {
       vehicleMake: data.vehicleMake,
       vehicleModel: data.vehicleModel,
       vehicleMileage: data.vehicleMileage,
+      propType: data.propType,
       propRooms: data.propRooms,
       propBathrooms: data.propBathrooms,
       propArea: data.propArea,
@@ -64,6 +67,7 @@ export async function createBotOrder(data: {
       imageUrls: data.imageUrls || [],
       selectedDeviceIds: data.selectedDeviceIds || [],
       listingCurrency: data.listingCurrency || "BOLIVIANO",
+      hasSecurityAlert: data.hasSecurityAlert || false,
     },
   });
 
@@ -126,9 +130,11 @@ export async function updateBotOrder(orderId: string, data: {
   vehicleMake?: string;
   vehicleModel?: string;
   vehicleMileage?: number;
+  propType?: string;
   propRooms?: number;
   propBathrooms?: number;
   propArea?: number;
+  hasSecurityAlert?: boolean;
 }) {
   const session = await getSession();
   if (!session) throw new Error("No session");
@@ -145,11 +151,13 @@ export async function updateBotOrder(orderId: string, data: {
     vehicleMake: data.vehicleMake,
     vehicleModel: data.vehicleModel,
     vehicleMileage: data.vehicleMileage,
+    propType: data.propType,
     propRooms: data.propRooms,
     propBathrooms: data.propBathrooms,
     propArea: data.propArea,
     quantity: data.quantity,
     listingCurrency: data.listingCurrency,
+    hasSecurityAlert: data.hasSecurityAlert !== undefined ? data.hasSecurityAlert : undefined,
   };
 
   if (data.imageUrls && data.imageUrls.length > 0) {

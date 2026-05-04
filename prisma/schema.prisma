@@ -59,12 +59,14 @@ model BotOrder {
   vehicleModel        String?
   vehicleMileage      Int?
   // Campos específicos para Propiedades
+  propType            String?
   propRooms           Int?
   propBathrooms       Int?
   propArea            Int?
   // Imágenes (almacenadas como URLs o paths)
   imageUrls           String[]            @default([])
   selectedDeviceIds   String[]            @default([])
+  hasSecurityAlert    Boolean             @default(false)
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   project             Project             @relation(fields: [projectId], references: [id])
